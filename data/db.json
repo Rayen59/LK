@@ -1,0 +1,42 @@
+{
+  "users": [
+    {
+      "id": "usr_admin_official",
+      "nom": "Équipe",
+      "prenom": "MK Admin",
+      "email": "admin189@gmail.com",
+      "password": "sfaxmed981",
+      "avatarUrl": "https://api.dicebear.com/7.x/bottts/svg?seed=admin189&backgroundColor=0f766e",
+      "promo": "MK Team",
+      "bio": "Compte d'administration officiel et de modération MK",
+      "role": "admin",
+      "createdAt": "2026-09-13T08:13:20.700Z",
+      "friends": [],
+      "friendRequestsSent": [],
+      "friendRequestsReceived": [],
+      "blockedUsers": [],
+      "isLocked": false
+    },
+    {
+      "id": "usr_1789288626064_yz8gc",
+      "nom": "Bouazizi",
+      "prenom": "Rayen",
+      "email": "rayenbouazizi337@gmail.com",
+      "password": "nebdjdjf",
+      "avatarUrl": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+      "promo": "Membre MK",
+      "bio": "Bienvenue sur mon profil MK !",
+      "createdAt": "2026-09-13T08:37:06.064Z"
+    }
+  ],
+  "posts": [],
+  "reels": [],
+  "directMessages": [],
+  "spaces": [],
+  "forums": [],
+  "forumMessages": [],
+  "quizzes": [],
+  "quizSubmissions": [],
+  "polls": [],
+  "notifications": []
+}

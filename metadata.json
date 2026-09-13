@@ -1,0 +1,6 @@
+{
+  "name": "MK",
+  "description": "MK - Réseau social interactif : publications, reels vidéo courts, messagerie instantanée multimédia, profils verrouillés, invitations d'amis et modération intelligente par IA.",
+  "requestFramePermissions": ["microphone", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -49,7 +49,7 @@ export async function checkContentToleranceWithAI(text: string): Promise<{ isTol
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: `Tu es un modérateur IA pour un réseau social jeune et dynamique (MK).
 Analyse le texte suivant pour détecter tout contenu intolérant, incitation à la haine, racisme, homophobie, harcèlement, menaces ou insultes dégradantes.
 Texte : """${text}"""
@@ -62,7 +62,13 @@ Réponds STRICTEMENT par un JSON valide :
 
     const outputText = response.text?.trim();
     if (outputText) {
-      const parsed = JSON.parse(outputText);
+      let cleanJson = outputText;
+      if (cleanJson.startsWith("```json")) {
+        cleanJson = cleanJson.replace(/^```json\s*/, "").replace(/\s*```$/, "");
+      } else if (cleanJson.startsWith("```")) {
+        cleanJson = cleanJson.replace(/^```\s*/, "").replace(/\s*```$/, "");
+      }
+      const parsed = JSON.parse(cleanJson);
       if (parsed.isTolerant === false) {
         return {
           isTolerant: false,

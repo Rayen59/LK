@@ -321,9 +321,9 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen ${activeTab === 'chat' ? 'h-screen overflow-hidden' : ''} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200`}>
+    <div className={`min-h-screen ${activeTab === 'chat' ? 'h-screen overflow-hidden' : ''} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative`}>
       
-      {/* Header */}
+      {/* Fixed Top Header */}
       <Header
         currentUser={currentUser}
         activeTab={activeTab}
@@ -349,8 +349,8 @@ export default function App() {
         pendingFriendRequestsCount={pendingFriendRequestsCount}
       />
 
-      {/* Main Tab Content */}
-      <main className={activeTab === 'chat' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'flex-1 pb-20 lg:pb-12'}>
+      {/* Main Tab Content - padded top to never hide under fixed header, padded bottom to never hide under fixed bottom nav */}
+      <main className={activeTab === 'chat' ? 'flex-1 min-h-0 pt-16 flex flex-col overflow-hidden' : 'flex-1 pt-16 sm:pt-17 pb-24'}>
         {activeTab === 'feed' && (
           <FeedView
             currentUser={currentUser}
@@ -419,90 +419,100 @@ export default function App() {
         )}
       </main>
 
-      {/* Mobile/Tablet Exterior Bottom Navigation Bar (Hidden when inside active chat conversation) */}
-      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex items-center justify-around py-2 px-1 shadow-lg ${
-        activeTab === 'chat' && isChatConversationOpen ? 'hidden' : 'flex'
-      }`}>
-        <button
-          onClick={() => navigateToTab('feed')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold transition ${
-            activeTab === 'feed'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <Sparkles className="w-5 h-5 mb-0.5" />
-          <span>Fil</span>
-        </button>
-
-        <button
-          onClick={() => navigateToTab('reels')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold transition relative ${
-            activeTab === 'reels'
-              ? 'text-rose-600 dark:text-rose-400'
-              : 'text-slate-500 dark:text-slate-400 hover:text-rose-500'
-          }`}
-        >
-          <div className="relative">
-            <Film className="w-5 h-5 mb-0.5" />
-            <span className="absolute -top-1 -right-2 text-[8px] font-bold bg-rose-500 text-white rounded-full px-1">
-              &lt;60s
-            </span>
-          </div>
-          <span>Reels</span>
-        </button>
-
-        <button
-          onClick={() => navigateToTab('chat')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold transition relative ${
-            activeTab === 'chat'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-500 dark:text-slate-400 hover:text-indigo-500'
-          }`}
-        >
-          <div className="relative">
-            <MessageCircle className="w-5 h-5 mb-0.5" />
-            {unreadDirectMessagesCount > 0 && (
-              <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
-                {unreadDirectMessagesCount}
-              </span>
-            )}
-          </div>
-          <span>Messages</span>
-        </button>
-
-        <button
-          onClick={() => setShowFriendsModal(true)}
-          className="flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition relative"
-        >
-          <div className="relative">
-            <Users className="w-5 h-5 mb-0.5" />
-            {pendingFriendRequestsCount > 0 && (
-              <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
-                {pendingFriendRequestsCount}
-              </span>
-            )}
-          </div>
-          <span>Amis</span>
-        </button>
-
-        <button
-          onClick={() => navigateToTab('profile')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold transition ${
-            activeTab === 'profile'
-              ? 'text-indigo-600 dark:text-indigo-400'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <img
-            src={currentUser.avatarUrl}
-            alt={currentUser.prenom}
-            className={`w-5 h-5 rounded-full object-cover mb-0.5 border ${
-              activeTab === 'profile' ? 'border-indigo-500' : 'border-slate-300 dark:border-slate-700'
+      {/* Rock-solid Fixed Bottom Navigation Bar (Hidden only inside active chat conversation) */}
+      <nav
+        id="app-bottom-fixed-nav"
+        className={`fixed bottom-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800 items-center justify-around py-1 sm:py-1.5 px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-all h-16 pb-[max(0.25rem,env(safe-area-inset-bottom))] ${
+          activeTab === 'chat' && isChatConversationOpen ? 'hidden' : 'flex'
+        }`}
+      >
+        <div className="w-full max-w-lg mx-auto flex items-center justify-around">
+          <button
+            id="bottom-nav-feed"
+            onClick={() => navigateToTab('feed')}
+            className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl ${
+              activeTab === 'feed'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
-          />
-          <span>Profil</span>
-        </button>
+          >
+            <Sparkles className="w-5 h-5 mb-0.5" />
+            <span>Fil</span>
+          </button>
+
+          <button
+            id="bottom-nav-reels"
+            onClick={() => navigateToTab('reels')}
+            className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl relative ${
+              activeTab === 'reels'
+                ? 'text-rose-600 dark:text-rose-400 bg-rose-50/70 dark:bg-rose-950/40'
+                : 'text-slate-500 dark:text-slate-400 hover:text-rose-500'
+            }`}
+          >
+            <div className="relative">
+              <Film className="w-5 h-5 mb-0.5" />
+              <span className="absolute -top-1 -right-2 text-[8px] font-bold bg-rose-500 text-white rounded-full px-1">
+                &lt;60s
+              </span>
+            </div>
+            <span>Reels</span>
+          </button>
+
+          <button
+            id="bottom-nav-chat"
+            onClick={() => navigateToTab('chat')}
+            className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl relative ${
+              activeTab === 'chat'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40'
+                : 'text-slate-500 dark:text-slate-400 hover:text-indigo-500'
+            }`}
+          >
+            <div className="relative">
+              <MessageCircle className="w-5 h-5 mb-0.5" />
+              {unreadDirectMessagesCount > 0 && (
+                <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                  {unreadDirectMessagesCount}
+                </span>
+              )}
+            </div>
+            <span>Messages</span>
+          </button>
+
+          <button
+            id="bottom-nav-friends"
+            onClick={() => setShowFriendsModal(true)}
+            className="flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition rounded-xl relative"
+          >
+            <div className="relative">
+              <Users className="w-5 h-5 mb-0.5" />
+              {pendingFriendRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                  {pendingFriendRequestsCount}
+                </span>
+              )}
+            </div>
+            <span>Amis</span>
+          </button>
+
+          <button
+            id="bottom-nav-profile"
+            onClick={() => navigateToTab('profile')}
+            className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl ${
+              activeTab === 'profile'
+                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <img
+              src={currentUser.avatarUrl}
+              alt={currentUser.prenom}
+              className={`w-5 h-5 rounded-full object-cover mb-0.5 border ${
+                activeTab === 'profile' ? 'border-indigo-500' : 'border-slate-300 dark:border-slate-700'
+              }`}
+            />
+            <span>Profil</span>
+          </button>
+        </div>
       </nav>
 
       {/* Friends & Invitations Modal */}
@@ -526,7 +536,7 @@ export default function App() {
 
       {/* Modern Footer (Hidden when activeTab === 'chat') */}
       {activeTab !== 'chat' && (
-        <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
+        <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors mb-16">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="font-medium text-slate-700 dark:text-slate-300">
               © {new Date().getFullYear()} Pulse Social • Réseau Social & Académique

@@ -22,7 +22,10 @@ import {
   UserCheck,
   Shield,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  ChevronUp,
+  ChevronDown,
+  MoveVertical
 } from 'lucide-react';
 
 interface ReelsViewProps {
@@ -54,6 +57,18 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
+
+  // Swipe / Drag gesture states
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartY = useRef<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartTime = useRef<number>(0);
+  const isMouseDown = useRef(false);
+  const mouseStartY = useRef<number>(0);
+  const lastWheelTime = useRef<number>(0);
+  const [showHeartAnimation, setShowHeartAnimation] = useState(false);
+  const lastTapTime = useRef<number>(0);
 
   // Create Reel Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -123,6 +138,145 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
     if (video.duration) {
       setProgress((video.currentTime / video.duration) * 100);
     }
+  };
+
+  // Next & Previous Reel handlers
+  const goToNextReel = () => {
+    if (activeReelIndex < reels.length - 1) {
+      setActiveReelIndex((prev) => prev + 1);
+      setProgress(0);
+      setIsPlaying(true);
+    }
+  };
+
+  const goToPrevReel = () => {
+    if (activeReelIndex > 0) {
+      setActiveReelIndex((prev) => prev - 1);
+      setProgress(0);
+      setIsPlaying(true);
+    }
+  };
+
+  // Touch gesture handlers for manual screen swiping
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+    touchStartX.current = e.touches[0].clientX;
+    touchStartTime.current = Date.now();
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === null || touchStartX.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const currentX = e.touches[0].clientX;
+    const deltaY = currentY - touchStartY.current;
+    const deltaX = currentX - touchStartX.current;
+
+    // If gesture is mostly vertical, drag the reel
+    if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      const clampedDelta = Math.max(-130, Math.min(130, deltaY * 0.75));
+      setDragOffsetY(clampedDelta);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartY.current !== null) {
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaY = touchEndY - touchStartY.current;
+      const duration = Date.now() - touchStartTime.current;
+
+      const isQuickFlick = duration < 280 && Math.abs(deltaY) > 25;
+      const isSufficientDrag = Math.abs(deltaY) > 45;
+
+      if (isQuickFlick || isSufficientDrag) {
+        if (deltaY < 0) {
+          goToNextReel();
+        } else {
+          goToPrevReel();
+        }
+      }
+    }
+    touchStartY.current = null;
+    touchStartX.current = null;
+    setIsDragging(false);
+    setDragOffsetY(0);
+  };
+
+  // Mouse drag handlers for desktop screen sliding
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, input, textarea, a')) return;
+    isMouseDown.current = true;
+    mouseStartY.current = e.clientY;
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown.current) return;
+    const deltaY = e.clientY - mouseStartY.current;
+    const clampedDelta = Math.max(-130, Math.min(130, deltaY * 0.75));
+    setDragOffsetY(clampedDelta);
+  };
+
+  const handleMouseUpOrLeave = (e: React.MouseEvent) => {
+    if (!isMouseDown.current) return;
+    const deltaY = e.clientY - mouseStartY.current;
+    if (deltaY < -45) {
+      goToNextReel();
+    } else if (deltaY > 45) {
+      goToPrevReel();
+    }
+    isMouseDown.current = false;
+    setIsDragging(false);
+    setDragOffsetY(0);
+  };
+
+  // Mouse wheel / trackpad scrolling handler
+  const handleWheel = (e: React.WheelEvent) => {
+    const now = Date.now();
+    if (now - lastWheelTime.current < 380) return;
+    if (e.deltaY > 25) {
+      lastWheelTime.current = now;
+      goToNextReel();
+    } else if (e.deltaY < -25) {
+      lastWheelTime.current = now;
+      goToPrevReel();
+    }
+  };
+
+  // Keyboard navigation listener (ArrowUp, ArrowDown, Space)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        goToNextReel();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        goToPrevReel();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        togglePlayPause();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeReelIndex, reels.length]);
+
+  // Double-tap on video to Like with heart splash
+  const handleVideoTap = () => {
+    const now = Date.now();
+    if (now - lastTapTime.current < 300) {
+      if (currentReel) {
+        if (!currentReel.likes.includes(currentUser.id)) {
+          handleLike(currentReel.id);
+        }
+        setShowHeartAnimation(true);
+        setTimeout(() => setShowHeartAnimation(false), 900);
+      }
+    } else {
+      togglePlayPause();
+    }
+    lastTapTime.current = now;
   };
 
   const handleLike = async (reelId: string) => {
@@ -369,10 +523,27 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
         </div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-6 items-start justify-center">
-          {/* Main Vertical Video Container */}
-          <div className="relative w-full max-w-[400px] mx-auto h-[620px] sm:h-[680px] bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center select-none">
+          {/* Main Vertical Video Container with Direct Screen Swiping & Dragging */}
+          <div
+            id="reels-main-stage"
+            className="relative w-full max-w-[400px] mx-auto h-[620px] sm:h-[680px] bg-black rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center select-none cursor-grab active:cursor-grabbing touch-none"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUpOrLeave}
+            onMouseLeave={handleMouseUpOrLeave}
+            onWheel={handleWheel}
+          >
             {currentReel && (
-              <>
+              <div
+                className="relative w-full h-full will-change-transform"
+                style={{
+                  transform: `translateY(${dragOffsetY}px)`,
+                  transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)',
+                }}
+              >
                 {/* Video Element */}
                 <video
                   ref={(el) => (videoRefs.current[currentReel.id] = el)}
@@ -382,9 +553,30 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                   playsInline
                   autoPlay
                   muted={isMuted}
-                  onClick={togglePlayPause}
+                  onClick={handleVideoTap}
                   onTimeUpdate={handleTimeUpdate}
                 />
+
+                {/* Double-tap Floating Heart Animation */}
+                {showHeartAnimation && (
+                  <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none animate-ping">
+                    <Heart className="w-24 h-24 text-rose-500 fill-rose-500 drop-shadow-2xl" />
+                  </div>
+                )}
+
+                {/* Drag Dynamic Indicator Feedback */}
+                {dragOffsetY < -30 && (
+                  <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3 py-1 rounded-full bg-indigo-600/90 text-white text-xs font-bold shadow-lg backdrop-blur-md flex items-center space-x-1 animate-bounce">
+                    <ChevronDown className="w-4 h-4" />
+                    <span>Reel suivant</span>
+                  </div>
+                )}
+                {dragOffsetY > 30 && (
+                  <div className="absolute top-12 left-1/2 -translate-x-1/2 z-30 pointer-events-none px-3 py-1 rounded-full bg-indigo-600/90 text-white text-xs font-bold shadow-lg backdrop-blur-md flex items-center space-x-1 animate-bounce">
+                    <ChevronUp className="w-4 h-4" />
+                    <span>Reel précédent</span>
+                  </div>
+                )}
 
                 {/* Top Progress bar */}
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/20 z-20">
@@ -398,6 +590,8 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                 <div className="absolute top-4 left-4 z-20 flex items-center space-x-2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold text-white border border-white/10">
                   <Clock className="w-3.5 h-3.5 text-indigo-400" />
                   <span>{currentReel.duration}s max</span>
+                  <span className="text-white/40">•</span>
+                  <span className="text-indigo-300 font-medium">#{activeReelIndex + 1}/{reels.length}</span>
                 </div>
 
                 {/* Sound toggle button */}
@@ -524,33 +718,43 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                   )}
                 </div>
 
-                {/* Carousel Navigation Arrows */}
+                {/* Floating Bottom Swipe Hint Pill */}
+                <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-black/40 backdrop-blur-md text-[10px] text-white/75 border border-white/10">
+                  <MoveVertical className="w-3 h-3 text-indigo-400 animate-pulse" />
+                  <span>Glisser l'écran pour défiler</span>
+                </div>
+
+                {/* Direct Navigation Chevrons on Left Side */}
                 {activeReelIndex > 0 && (
                   <button
-                    onClick={() => {
-                      setActiveReelIndex((prev) => prev - 1);
-                      setProgress(0);
+                    id="reel-btn-prev"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goToPrevReel();
                     }}
-                    className="absolute top-1/2 left-2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/70 transition border border-white/20"
-                    title="Reel précédent"
+                    className="absolute top-1/2 left-2 -translate-y-6 z-30 w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/80 transition border border-white/20 shadow-md"
+                    title="Reel précédent (ou glisser vers le bas)"
+                    aria-label="Reel précédent"
                   >
-                    ▲
+                    <ChevronUp className="w-5 h-5" />
                   </button>
                 )}
 
                 {activeReelIndex < reels.length - 1 && (
                   <button
-                    onClick={() => {
-                      setActiveReelIndex((prev) => prev + 1);
-                      setProgress(0);
+                    id="reel-btn-next"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      goToNextReel();
                     }}
-                    className="absolute bottom-24 left-2 z-30 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/70 transition border border-white/20"
-                    title="Reel suivant"
+                    className="absolute top-1/2 left-2 translate-y-6 z-30 w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/80 transition border border-white/20 shadow-md"
+                    title="Reel suivant (ou glisser vers le haut)"
+                    aria-label="Reel suivant"
                   >
-                    ▼
+                    <ChevronDown className="w-5 h-5" />
                   </button>
                 )}
-              </>
+              </div>
             )}
           </div>
 

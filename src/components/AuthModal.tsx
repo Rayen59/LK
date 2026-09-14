@@ -91,7 +91,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6">
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-start sm:justify-center items-center p-3 sm:p-6 py-6 sm:py-10 overflow-y-auto w-full">
       {/* Container Box */}
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
         

@@ -190,27 +190,29 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-sm overflow-hidden mb-6 transition-colors">
-      <form onSubmit={handleSubmit} className="p-5">
+    <div className="bg-white dark:bg-[#111625] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden mb-5 transition-colors">
+      <form onSubmit={handleSubmit} className="p-4 sm:p-5">
         
         {/* Author Header */}
         <div className="flex items-center space-x-3 mb-3">
           <img
             src={currentUser.avatarUrl}
             alt={currentUser.prenom}
-            className="w-10 h-10 rounded-full object-cover border border-teal-600 shadow-xs"
+            className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-2xs"
             referrerPolicy="no-referrer"
           />
           <div>
-            <span className="font-bold text-slate-800 dark:text-white text-sm">
-              {currentUser.prenom} {currentUser.nom}
-            </span>
-            <div className="flex items-center space-x-2 text-[11px] text-slate-500 dark:text-slate-400">
-              <span className="bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded font-semibold border border-teal-100 dark:border-teal-900">
-                {currentUser.promo}
+            <div className="flex items-center space-x-2">
+              <span className="font-semibold text-slate-900 dark:text-white text-sm">
+                {currentUser.prenom} {currentUser.nom}
               </span>
-              <span>• Partager avec la communauté</span>
+              <span className="text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">
+                {currentUser.promo || 'Membre'}
+              </span>
             </div>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
+              Partager avec la communauté
+            </p>
           </div>
         </div>
 
@@ -220,11 +222,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
           rows={3}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Quoi de neuf ? Partagez une pensée, une photo, une vidéo, un vocal ou un fichier..."
-          className="w-full text-slate-800 dark:text-white placeholder:text-slate-400 bg-transparent text-sm border-none focus:outline-none focus:ring-0 resize-none"
+          placeholder="Quoi de neuf ? Partagez une réflexion, une photo, une vidéo, un vocal ou un cours..."
+          className="w-full text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent text-sm border-none focus:outline-none focus:ring-0 resize-none leading-relaxed"
         />
 
-        {/* Audio Recorder Module (with mic or upload options) */}
+        {/* Audio Recorder Module */}
         {showAudioRecorder && (
           <div className="mt-3 mb-3">
             <AudioRecorder
@@ -239,29 +241,29 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
 
         {/* Attachment Previews */}
         {attachments.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 mb-3">
             {attachments.map((att) => {
               if (att.type === 'audio') {
                 return (
                   <div
                     key={att.id}
-                    className="p-3.5 bg-teal-50/90 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 rounded-2xl space-y-2.5 col-span-1 sm:col-span-2 shadow-2xs"
+                    className="p-3 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/60 rounded-xl space-y-2 col-span-1 sm:col-span-2"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center space-x-2 truncate">
-                        <Volume2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
-                        <span className="font-bold text-teal-900 dark:text-teal-200 truncate text-xs">
-                          {att.name || 'Note Vocale Médicale Prête à être Partagée'}
+                        <Volume2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                        <span className="font-semibold text-indigo-950 dark:text-indigo-200 truncate text-xs">
+                          {att.name || 'Note vocale prête'}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeAttachment(att.id)}
-                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/80 dark:hover:bg-rose-900 text-rose-600 dark:text-rose-300 rounded-xl text-xs font-bold border border-rose-200 dark:border-rose-900 transition cursor-pointer shrink-0 min-h-[36px]"
-                        title="Supprimer définitivement ce vocal"
+                        className="inline-flex items-center space-x-1 px-2.5 py-1 bg-white hover:bg-rose-50 dark:bg-slate-900 dark:hover:bg-rose-950/60 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-medium border border-slate-200 dark:border-slate-800 transition cursor-pointer shrink-0"
+                        title="Supprimer ce vocal"
                       >
                         <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                        <span>Supprimer le vocal</span>
+                        <span>Supprimer</span>
                       </button>
                     </div>
                     {/* Live preview of recorded/uploaded audio */}
@@ -273,18 +275,18 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
               return (
                 <div
                   key={att.id}
-                  className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-xs"
+                  className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-850/60 border border-slate-200/70 dark:border-slate-800 rounded-xl text-xs"
                 >
                   <div className="flex items-center space-x-2 truncate pr-2">
-                    {att.type === 'document' && <FileText className="w-4 h-4 text-blue-600 shrink-0" />}
-                    {att.type === 'video' && <Video className="w-4 h-4 text-purple-600 shrink-0" />}
-                    {att.type === 'image' && <Image className="w-4 h-4 text-emerald-600 shrink-0" />}
+                    {att.type === 'document' && <FileText className="w-4 h-4 text-blue-500 shrink-0" />}
+                    {att.type === 'video' && <Video className="w-4 h-4 text-purple-500 shrink-0" />}
+                    {att.type === 'image' && <Image className="w-4 h-4 text-emerald-500 shrink-0" />}
                     <span className="truncate font-medium text-slate-700 dark:text-slate-200">{att.name}</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeAttachment(att.id)}
-                    className="inline-flex items-center space-x-1 px-2.5 py-1 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg text-xs font-semibold transition cursor-pointer min-h-[32px]"
+                    className="inline-flex items-center space-x-1 px-2 py-0.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-md text-xs font-medium transition cursor-pointer"
                     title="Supprimer ce fichier"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -296,11 +298,11 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
           </div>
         )}
 
-        {/* Medical Tags Selector */}
-        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+        {/* Medical / Subject Tags Selector */}
+        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
           <div className="flex items-center space-x-1.5 text-xs text-slate-500 dark:text-slate-400 mb-2">
-            <Tag className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-            <span className="font-semibold">Matière ou Module FMS :</span>
+            <Tag className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span className="font-medium text-[11px]">Sujet / Module :</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {MEDICAL_TAGS.map((tag) => {
@@ -310,10 +312,10 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
                   key={tag}
                   type="button"
                   onClick={() => toggleTag(tag)}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer ${
                     isSelected
-                      ? 'bg-teal-600 text-white shadow-2xs'
-                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs'
+                      : 'bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
                   }`}
                 >
                   {tag}
@@ -324,34 +326,34 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
         </div>
 
         {error && (
-          <div className="flex items-center space-x-2 mt-3 p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 rounded-2xl text-xs">
+          <div className="flex items-center space-x-2 mt-3 p-2.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 rounded-xl text-xs">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Actions Bar */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex items-center space-x-1 sm:space-x-2">
+        <div className="flex items-center justify-between mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+          <div className="flex items-center space-x-1 sm:space-x-1.5">
             
             {/* Vocal note button */}
             <button
               type="button"
               onClick={() => setShowAudioRecorder((prev) => !prev)}
-              className={`p-2 rounded-xl transition flex items-center space-x-1.5 text-xs font-bold cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1.5 text-xs font-medium cursor-pointer ${
                 showAudioRecorder
-                  ? 'bg-teal-600 text-white shadow-xs'
-                  : 'text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-950 border border-teal-200 dark:border-teal-800'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
+                  : 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-950/80'
               }`}
               title="Enregistrer ou importer une note vocale"
             >
-              <Mic className="w-4 h-4" />
+              <Mic className="w-3.5 h-3.5" />
               <span>Vocal</span>
             </button>
 
             {/* Document button */}
-            <label className="p-2 text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition flex items-center space-x-1.5 text-xs font-medium" title="Joindre un document (PDF, Word...)">
-              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <label className="px-2.5 py-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition flex items-center space-x-1.5 text-xs font-medium" title="Joindre un document (PDF, Word...)">
+              <FileText className="w-3.5 h-3.5 text-blue-500" />
               <span className="hidden sm:inline">Document</span>
               <input
                 type="file"
@@ -362,8 +364,8 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
             </label>
 
             {/* Video button */}
-            <label className="p-2 text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition flex items-center space-x-1.5 text-xs font-medium" title="Joindre une vidéo">
-              <Video className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <label className="px-2.5 py-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition flex items-center space-x-1.5 text-xs font-medium" title="Joindre une vidéo">
+              <Video className="w-3.5 h-3.5 text-purple-500" />
               <span className="hidden sm:inline">Vidéo</span>
               <input
                 type="file"
@@ -374,9 +376,9 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
             </label>
 
             {/* Image button */}
-            <label className="p-2 text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition flex items-center space-x-1.5 text-xs font-medium" title="Joindre une image">
-              <Image className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="hidden sm:inline">Image</span>
+            <label className="px-2.5 py-1.5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition flex items-center space-x-1.5 text-xs font-medium" title="Joindre une image">
+              <Image className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="hidden sm:inline">Photo</span>
               <input
                 type="file"
                 accept="image/*"
@@ -391,10 +393,10 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
             id="publish-btn"
             type="submit"
             disabled={submitting}
-            className="flex items-center space-x-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/20 transition disabled:opacity-50 cursor-pointer"
+            className="flex items-center space-x-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-xs transition active:scale-98 disabled:opacity-50 cursor-pointer"
           >
             {submitting ? (
-              <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              <span className="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
             ) : (
               <>
                 <span>Publier</span>

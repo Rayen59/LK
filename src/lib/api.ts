@@ -236,6 +236,7 @@ export const api = {
       description?: string;
       subject: string;
       questions: any[];
+      totalPoints?: number;
     }): Promise<{ quiz: Quiz }> => {
       return fetchWithAuth('/api/quizzes', {
         method: 'POST',
@@ -455,10 +456,48 @@ export const api = {
       receiverId: string;
       content?: string;
       attachment?: DirectMessageAttachment;
+      replyTo?: { messageId: string; senderName: string; content: string };
+      isForwarded?: boolean;
     }): Promise<{ message: DirectMessage }> => {
       return fetchWithAuth('/api/messages', {
         method: 'POST',
         body: JSON.stringify(data),
+      });
+    },
+    toggleReaction: async (
+      messageId: string,
+      emoji: string
+    ): Promise<{ success: boolean; reactions: any[] }> => {
+      return fetchWithAuth(`/api/messages/${messageId}/react`, {
+        method: 'POST',
+        body: JSON.stringify({ emoji }),
+      });
+    },
+    editMessage: async (
+      messageId: string,
+      content: string
+    ): Promise<{ success: boolean; message: DirectMessage }> => {
+      return fetchWithAuth(`/api/messages/${messageId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ content }),
+      });
+    },
+    deleteMessage: async (
+      messageId: string,
+      mode: 'for_me' | 'for_everyone'
+    ): Promise<{ success: boolean; mode: string }> => {
+      return fetchWithAuth(`/api/messages/${messageId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ mode }),
+      });
+    },
+    forwardMessage: async (
+      messageId: string,
+      targetUserIds: string[]
+    ): Promise<{ success: boolean; forwardedCount: number; messages: DirectMessage[] }> => {
+      return fetchWithAuth(`/api/messages/${messageId}/forward`, {
+        method: 'POST',
+        body: JSON.stringify({ targetUserIds }),
       });
     },
   },

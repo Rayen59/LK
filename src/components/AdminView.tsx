@@ -16,14 +16,17 @@ import {
   ShieldAlert,
   RefreshCw,
   MessageSquareOff,
-  Sparkles
+  Sparkles,
+  ArrowLeft,
+  Loader2
 } from 'lucide-react';
 
 interface AdminViewProps {
   currentUser: User;
+  onGoBack?: () => void;
 }
 
-export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
+export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,46 +160,59 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
   const activeCount = users.filter((u) => !u.isBanned && !u.isRestricted).length;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      
+    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+      {/* Top Back Navigation */}
+      {onGoBack && (
+        <div className="mb-4">
+          <button
+            onClick={onGoBack}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold text-xs shadow-2xs transition group"
+            title="Revenir à la page précédente"
+          >
+            <ArrowLeft className="w-4 h-4 text-indigo-500 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Revenir à la page précédente</span>
+          </button>
+        </div>
+      )}
+
       {/* Toast alert */}
       {messageToast && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-xl border flex items-center space-x-2 text-xs font-bold transition-all ${
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-2xl shadow-xl border flex items-center space-x-2 text-xs font-bold transition-all ${
             messageToast.type === 'success'
               ? 'bg-emerald-50 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-800'
               : 'bg-rose-50 dark:bg-rose-950/90 text-rose-800 dark:text-rose-200 border-rose-300 dark:border-rose-800'
           }`}
         >
           {messageToast.type === 'success' ? (
-            <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           ) : (
-            <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
           )}
           <span>{messageToast.text}</span>
         </div>
       )}
 
       {/* Admin Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 dark:from-slate-950 dark:via-teal-950 dark:to-slate-950 p-6 sm:p-8 rounded-3xl text-white shadow-lg border border-slate-800 dark:border-slate-800 mb-8">
+      <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl text-white shadow-sm mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-teal-900/60 border border-teal-500/40 text-teal-300 text-xs font-bold uppercase tracking-wider mb-2">
-              <ShieldCheck className="w-4 h-4 text-teal-400" />
-              <span>Administration MK & Modération Officielle</span>
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
+              <ShieldCheck className="w-4 h-4 text-indigo-400" />
+              <span>Panneau d'Administration</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-              Gestion des Membres, Sanctions & Restrictions
+              Gestion des Membres & Modération
             </h2>
-            <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-              Supervisez les comptes de la communauté MK, appliquez des bannissements temporaires (1j, 3j, 14j) ou définitifs, ou limitez les interactions en mode lecture seule.
+            <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+              Supervisez les comptes de la communauté, appliquez des sanctions temporaires ou définitives, ou limitez les interactions en mode lecture seule.
             </p>
           </div>
 
           <button
             onClick={loadUsers}
             disabled={loading}
-            className="self-start md:self-auto flex items-center space-x-2 px-4 py-2 bg-slate-800/80 hover:bg-slate-700/80 text-white rounded-xl text-xs font-bold border border-slate-700 transition"
+            className="self-start md:self-auto flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold border border-slate-700 transition"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Actualiser</span>
@@ -204,20 +220,20 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800/80">
-          <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800">
+          <div className="p-3 bg-slate-800/40 rounded-2xl border border-slate-750">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Inscrits</span>
             <span className="text-2xl font-black text-white">{totalUsers}</span>
           </div>
-          <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+          <div className="p-3 bg-slate-800/40 rounded-2xl border border-slate-750">
             <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">Comptes Actifs</span>
             <span className="text-2xl font-black text-emerald-400">{activeCount}</span>
           </div>
-          <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+          <div className="p-3 bg-slate-800/40 rounded-2xl border border-slate-750">
             <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">Lecture Seule</span>
             <span className="text-2xl font-black text-amber-400">{restrictedCount}</span>
           </div>
-          <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+          <div className="p-3 bg-slate-800/40 rounded-2xl border border-slate-750">
             <span className="text-[11px] font-bold text-rose-400 uppercase tracking-wider block">Bannis / Suspendus</span>
             <span className="text-2xl font-black text-rose-400">{bannedCount}</span>
           </div>
@@ -225,7 +241,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
       </div>
 
       {/* Filters & Search Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
         
         {/* Search Input with Search Button */}
         <div className="flex items-center space-x-2 w-full sm:w-auto flex-1 max-w-md">
@@ -233,19 +249,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Rechercher par nom, prénom, email ou promo..."
+              placeholder="Rechercher par nom, prénom, email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-600"
+              className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-indigo-500"
             />
           </div>
-          <button
-            type="button"
-            className="px-3.5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1"
-          >
-            <Search className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Chercher</span>
-          </button>
         </div>
 
         {/* Status Filter Chips */}
@@ -254,7 +263,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
             onClick={() => setStatusFilter('all')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               statusFilter === 'all'
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
             }`}
           >
@@ -265,7 +274,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
             onClick={() => setStatusFilter('active')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               statusFilter === 'active'
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-emerald-600 text-white shadow-xs'
                 : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
             }`}
           >
@@ -276,7 +285,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
             onClick={() => setStatusFilter('restricted')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               statusFilter === 'restricted'
-                ? 'bg-amber-600 text-white'
+                ? 'bg-amber-600 text-white shadow-xs'
                 : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
             }`}
           >
@@ -287,7 +296,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
             onClick={() => setStatusFilter('banned')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               statusFilter === 'banned'
-                ? 'bg-rose-600 text-white'
+                ? 'bg-rose-600 text-white shadow-xs'
                 : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 hover:bg-rose-100'
             }`}
           >
@@ -299,11 +308,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
 
       {/* Users List */}
       {loading ? (
-        <div className="text-center py-20 text-slate-400 text-xs">
-          Chargement de la liste des utilisateurs MK...
+        <div className="text-center py-20 text-slate-400 text-xs flex flex-col items-center">
+          <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
+          <span>Chargement des utilisateurs...</span>
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center">
           <UserX className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-800 dark:text-white">Aucun utilisateur trouvé</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -340,7 +350,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                     ? 'border-rose-300 dark:border-rose-900/60 bg-rose-50/30 dark:bg-rose-950/10'
                     : isRestricted
                     ? 'border-amber-300 dark:border-amber-900/60 bg-amber-50/20 dark:bg-amber-950/10'
-                    : 'border-slate-200 dark:border-slate-800'
+                    : 'border-slate-200/80 dark:border-slate-800'
                 }`}
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -350,7 +360,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                     <img
                       src={user.avatarUrl}
                       alt={user.nom}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700 flex-shrink-0"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700 shrink-0"
                       referrerPolicy="no-referrer"
                     />
 
@@ -361,13 +371,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                         </span>
 
                         {isAdmin && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                             Administrateur
                           </span>
                         )}
 
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                          {user.promo || 'Étudiant'}
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                          {user.promo || 'Membre'}
                         </span>
                       </div>
 
@@ -385,12 +395,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                         ) : isRestricted ? (
                           <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
                             <Eye className="w-3 h-3" />
-                            <span>Lecture seule (interactions limitées)</span>
+                            <span>Lecture seule</span>
                           </span>
                         ) : (
                           <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                             <CheckCircle className="w-3 h-3" />
-                            <span>Compte en règle (Actif)</span>
+                            <span>Compte Actif</span>
                           </span>
                         )}
 
@@ -414,7 +424,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                             ? 'bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/50 dark:hover:bg-amber-900 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
                             : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
                         }`}
-                        title="Quand activé, l'utilisateur peut uniquement voir les publications et ne peut plus publier ni commenter."
+                        title="Quand activé, l'utilisateur peut uniquement voir les publications."
                       >
                         {isRestricted ? (
                           <>
@@ -424,7 +434,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                         ) : (
                           <>
                             <MessageSquareOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                            <span>Limiter (Voir seulement)</span>
+                            <span>Limiter</span>
                           </>
                         )}
                       </button>
@@ -434,7 +444,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                         <button
                           onClick={() => handleUnban(user.id)}
                           disabled={actionLoadingId === user.id}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
                         >
                           <UserCheck className="w-3.5 h-3.5" />
                           <span>Débannir</span>
@@ -447,10 +457,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                             setBanReason('');
                           }}
                           disabled={actionLoadingId === user.id}
-                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
+                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
                         >
                           <UserX className="w-3.5 h-3.5" />
-                          <span>Bannir le carabin</span>
+                          <span>Bannir</span>
                         </button>
                       )}
 
@@ -485,12 +495,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                 <ShieldAlert className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Bannir l'étudiant
+                  Bannir l'utilisateur
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {banTargetUser.prenom} {banTargetUser.nom} ({banTargetUser.email})
@@ -512,7 +522,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                     className={`p-2.5 rounded-xl text-xs font-bold border text-center transition ${
                       banDuration === '1d'
                         ? 'bg-rose-600 text-white border-rose-600'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
                     }`}
                   >
                     1 Jour (24h)
@@ -524,7 +534,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                     className={`p-2.5 rounded-xl text-xs font-bold border text-center transition ${
                       banDuration === '3d'
                         ? 'bg-rose-600 text-white border-rose-600'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
                     }`}
                   >
                     3 Jours (72h)
@@ -536,10 +546,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                     className={`p-2.5 rounded-xl text-xs font-bold border text-center transition ${
                       banDuration === '14d'
                         ? 'bg-rose-600 text-white border-rose-600'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
                     }`}
                   >
-                    14 Jours (2 sem.)
+                    14 Jours
                   </button>
 
                   <button
@@ -548,7 +558,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                     className={`p-2.5 rounded-xl text-xs font-bold border text-center transition ${
                       banDuration === 'permanent'
                         ? 'bg-rose-600 text-white border-rose-600'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-400'
                     }`}
                   >
                     Définitivement
@@ -559,14 +569,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
               {/* Reason */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Motif de la sanction (affiché à l'utilisateur) :
+                  Motif de la sanction :
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Ex: Non respect de la déontologie, diffusion de contenus non conformes..."
+                  placeholder="Ex: Non respect des règles de la communauté..."
                   value={banReason}
                   onChange={(e) => setBanReason(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500 resize-none"
+                  className="w-full px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-rose-500 resize-none"
                 />
               </div>
 
@@ -574,13 +584,13 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
                 <button
                   type="button"
                   onClick={() => setBanTargetUser(null)}
-                  className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold"
+                  className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md transition"
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-xs transition"
                 >
                   Confirmer le bannissement
                 </button>
@@ -609,14 +619,14 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser }) => {
               <button
                 type="button"
                 onClick={() => setUserToDelete(null)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={handleDeleteUser}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow transition"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-xs transition"
               >
                 Supprimer définitivement
               </button>

@@ -298,38 +298,38 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
   return (
     <div className="w-full max-w-5xl mx-auto py-4 px-2 sm:px-4">
       {/* Top Bar with Action Button */}
-      <div className="flex items-center justify-between mb-4 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm gap-2">
-        <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+      <div className="flex items-center justify-between mb-5 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs gap-3">
+        <div className="flex items-center space-x-3 min-w-0">
           {onGoBack && (
             <button
               onClick={onGoBack}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-pink-50 dark:bg-slate-800 dark:hover:bg-pink-950/40 text-slate-700 dark:text-slate-300 hover:text-pink-600 border border-slate-200 dark:border-slate-700 flex items-center space-x-1.5 text-xs font-bold transition shrink-0 group"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 hover:text-indigo-600 border border-slate-200 dark:border-slate-700 flex items-center space-x-1.5 text-xs font-bold transition shrink-0 group"
               title="Revenir à la page précédente"
             >
-              <ArrowLeft className="w-4 h-4 text-pink-500 group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeft className="w-4 h-4 text-indigo-500 group-hover:-translate-x-0.5 transition-transform" />
               <span className="hidden sm:inline">Retour</span>
             </button>
           )}
 
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-rose-500 flex items-center justify-center text-white shadow-md shadow-pink-500/20 shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xs shrink-0">
             <Film className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-black text-slate-900 dark:text-white flex items-center space-x-2">
+            <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white flex items-center space-x-2">
               <span className="truncate">Reels Vidéo</span>
-              <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/60 text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-800 shrink-0">
+              <span className="text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 shrink-0">
                 &lt; 60 sec
               </span>
             </h1>
             <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">
-              Vidéos courtes, format immersif et modération par IA
+              Vidéos courtes, format immersif et modération bienveillante
             </p>
           </div>
         </div>
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-pink-600/30 transition transform active:scale-95"
+          className="flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xs transition transform active:scale-95"
         >
           <Plus className="w-4 h-4" />
           <span>Créer un Reel</span>
@@ -389,14 +389,14 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                 {/* Top Progress bar */}
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-white/20 z-20">
                   <div
-                    className="h-full bg-pink-500 transition-all duration-100"
+                    className="h-full bg-indigo-500 transition-all duration-100"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
 
                 {/* Top info badge */}
                 <div className="absolute top-4 left-4 z-20 flex items-center space-x-2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-bold text-white border border-white/10">
-                  <Clock className="w-3.5 h-3.5 text-pink-400" />
+                  <Clock className="w-3.5 h-3.5 text-indigo-400" />
                   <span>{currentReel.duration}s max</span>
                 </div>
 
@@ -492,13 +492,13 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                     <img
                       src={currentReel.authorAvatar}
                       alt={currentReel.authorName}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-pink-500 group-hover:scale-105 transition shrink-0"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500 group-hover:scale-105 transition shrink-0"
                     />
                     <div className="min-w-0">
-                      <h4 className="text-sm font-black text-white group-hover:text-pink-400 transition truncate">
+                      <h4 className="text-sm font-black text-white group-hover:text-indigo-300 transition truncate">
                         {currentReel.authorName}
                       </h4>
-                      <p className="text-[11px] text-pink-300 font-medium truncate">
+                      <p className="text-[11px] text-indigo-200 font-medium truncate">
                         {currentReel.authorPromo || 'Membre Pulse'}
                       </p>
                     </div>
@@ -558,7 +558,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
           <div className="hidden lg:flex flex-col w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm h-[680px]">
             <h3 className="text-sm font-black text-slate-900 dark:text-white mb-3 flex items-center justify-between">
               <span>Tous les Reels ({reels.length})</span>
-              <span className="text-[10px] font-bold text-pink-600 bg-pink-50 dark:bg-pink-950/50 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-full">
                 Flux actif
               </span>
             </h3>
@@ -574,7 +574,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                   }}
                   className={`flex items-center space-x-3 p-2.5 rounded-2xl cursor-pointer transition ${
                     activeReelIndex === idx
-                      ? 'bg-pink-50 dark:bg-pink-950/40 border border-pink-300 dark:border-pink-800'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300 dark:border-indigo-800'
                       : 'hover:bg-slate-100 dark:hover:bg-slate-800/60 border border-transparent'
                   }`}
                 >
@@ -597,7 +597,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
                       {reel.caption || 'Sans légende'}
                     </div>
-                    <div className="flex items-center space-x-2 text-[10px] text-pink-600 dark:text-pink-400 font-semibold mt-1">
+                    <div className="flex items-center space-x-2 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold mt-1">
                       <span>{reel.duration}s</span>
                       <span>•</span>
                       <span>{reel.likes.length} likes</span>
@@ -621,7 +621,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
           <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center space-x-2">
-                <MessageCircle className="w-5 h-5 text-pink-500" />
+                <MessageCircle className="w-5 h-5 text-indigo-500" />
                 <h3 className="text-base font-black text-slate-900 dark:text-white">
                   Commentaires ({currentReel.comments?.length || 0})
                 </h3>
@@ -635,10 +635,10 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
             </div>
 
             {/* AI Moderation Badge */}
-            <div className="flex items-center space-x-1.5 my-2.5 px-3 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/30 text-[11px] text-pink-700 dark:text-pink-300 border border-pink-200 dark:border-pink-900/50">
-              <Sparkles className="w-3.5 h-3.5 text-pink-500 shrink-0" />
+            <div className="flex items-center space-x-1.5 my-2.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-[11px] text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/50">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
               <span>
-                Protection active : l'IA supprime immédiatement tout commentaire intolérant ou agressif.
+                Protection active : modération automatique pour préserver un espace respectueux.
               </span>
             </div>
 
@@ -702,12 +702,12 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Ajouter un commentaire..."
                 disabled={submittingComment}
-                className="flex-1 py-2.5 px-3.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-pink-500"
+                className="flex-1 py-2.5 px-3.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
               />
               <button
                 type="submit"
                 disabled={submittingComment || !commentText.trim()}
-                className="p-2.5 rounded-xl bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white transition flex items-center justify-center"
+                className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white transition flex items-center justify-center shadow-xs"
               >
                 {submittingComment ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -731,7 +731,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
           <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center space-x-2">
-                <Film className="w-5 h-5 text-pink-500" />
+                <Film className="w-5 h-5 text-indigo-500" />
                 <h3 className="text-base font-black text-slate-900 dark:text-white">
                   Publier un nouveau Reel (&lt; 60s)
                 </h3>
@@ -769,13 +769,13 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                   type="file"
                   accept="video/*"
                   onChange={handleVideoFileChange}
-                  className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100 dark:file:bg-pink-950/50 dark:file:text-pink-300 cursor-pointer"
+                  className="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950/50 dark:file:text-indigo-300 cursor-pointer"
                 />
               </div>
 
               {/* Video preview if selected */}
               {videoPreviewUrl && (
-                <div className="relative w-44 h-64 mx-auto rounded-2xl overflow-hidden bg-black border-2 border-pink-500 shadow-md">
+                <div className="relative w-44 h-64 mx-auto rounded-2xl overflow-hidden bg-black border-2 border-indigo-500 shadow-md">
                   <video
                     src={videoPreviewUrl}
                     className="w-full h-full object-cover"
@@ -797,7 +797,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                   onChange={(e) => setCaption(e.target.value)}
                   placeholder="Décrivez votre Reel..."
                   rows={3}
-                  className="w-full p-3 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-pink-500"
+                  className="w-full p-3 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
                 />
               </div>
 
@@ -811,7 +811,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                   value={tagsInput}
                   onChange={(e) => setTagsInput(e.target.value)}
                   placeholder="ex: cours, astuce, motivation, projet"
-                  className="w-full p-2.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-pink-500"
+                  className="w-full p-2.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
                 />
               </div>
 
@@ -826,12 +826,12 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                 <button
                   type="submit"
                   disabled={submittingReel || !videoPreviewUrl}
-                  className="px-5 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 disabled:opacity-50 text-white text-xs font-bold shadow-md flex items-center space-x-1.5"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5"
                 >
                   {submittingReel ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Analyse IA & Publication...</span>
+                      <span>Publication en cours...</span>
                     </>
                   ) : (
                     <span>Publier le Reel</span>
@@ -879,7 +879,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                   value={editCaption}
                   onChange={(e) => setEditCaption(e.target.value)}
                   rows={3}
-                  className="w-full p-2.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-pink-500"
+                  className="w-full p-2.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
                 />
               </div>
 
@@ -891,7 +891,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                   type="text"
                   value={editTags}
                   onChange={(e) => setEditTags(e.target.value)}
-                  className="w-full p-2.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-pink-500"
+                  className="w-full p-2.5 rounded-xl text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
                 />
               </div>
 
@@ -906,7 +906,7 @@ export const ReelsView: React.FC<ReelsViewProps> = ({
                 <button
                   type="submit"
                   disabled={updatingReel}
-                  className="px-5 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold shadow-md flex items-center space-x-1.5"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs flex items-center space-x-1.5"
                 >
                   {updatingReel ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -103,9 +103,9 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-slate-900 dark:bg-slate-950 border-b border-slate-800 text-white shadow-xl transition-colors">
-        <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between h-16 sm:h-18 gap-1.5 sm:gap-3">
+      <header className="sticky top-0 z-40 bg-white/85 dark:bg-[#0b0f19]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-850 text-slate-900 dark:text-slate-100 shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-colors">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center justify-between h-15 sm:h-16 gap-2 sm:gap-4">
             
             {/* Left: Back Arrow + Logo & Social Branding */}
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 shrink-0">
@@ -114,33 +114,33 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   id="header-back-arrow-btn"
                   onClick={onGoBack}
-                  className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-teal-600 text-teal-300 hover:text-white border border-teal-500/40 hover:border-teal-400 text-xs font-black transition-all shadow-md active:scale-95 group shrink-0"
+                  className="flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold transition-all active:scale-95 group shrink-0"
                   title="Revenir à la page précédente"
                   aria-label="Revenir à la page précédente"
                 >
-                  <ArrowLeft className="w-4 h-4 text-teal-400 group-hover:text-white group-hover:-translate-x-0.5 transition-transform shrink-0" />
+                  <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
                   <span className="hidden sm:inline">Retour</span>
                 </button>
               )}
 
               <div
-                className="flex items-center space-x-2 sm:space-x-3 cursor-pointer select-none min-w-0 shrink-0"
+                className="flex items-center space-x-2.5 cursor-pointer select-none min-w-0 shrink-0 group"
                 onClick={() => onTabChange('feed')}
               >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-teal-500/20 shrink-0">
-                  <span className="font-black text-sm sm:text-base tracking-tighter">MK</span>
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-sm shadow-indigo-500/25 group-hover:scale-105 transition-transform shrink-0">
+                  <span className="font-extrabold text-sm tracking-tight">MK</span>
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center space-x-1.5">
-                    <span className="font-black text-base sm:text-xl tracking-tight text-white whitespace-nowrap">
-                      MK <span className="text-teal-400">Social</span>
+                    <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
+                      MK<span className="text-indigo-600 dark:text-indigo-400 font-normal ml-0.5">Social</span>
                     </span>
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-teal-950 text-teal-300 border border-teal-800 shrink-0">
+                    <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-semibold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900 shrink-0">
                       Live
                     </span>
                   </div>
-                  <p className="text-[10px] sm:text-[11px] text-slate-400 hidden md:block font-medium truncate">
-                    Publications, Reels & Messagerie Instantanée
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 hidden md:block font-medium truncate">
+                    Fil • Reels • Messagerie
                   </p>
                 </div>
               </div>
@@ -156,21 +156,25 @@ export const Header: React.FC<HeaderProps> = ({
                     key={item.id}
                     id={`nav-btn-${item.id}`}
                     onClick={() => onTabChange(item.id as MainTabType)}
-                    className={`relative flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+                    className={`relative flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
                       isActive
-                        ? 'bg-teal-600 text-white shadow-md shadow-teal-950/60'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                     }`}
                   >
-                    <Icon className="w-4 h-4 shrink-0" />
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
                     <span>{item.label}</span>
                     {item.badge && (
-                      <span className="text-[9px] font-black px-1.5 py-0.2 rounded-full bg-pink-500 text-white">
+                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
+                        isActive 
+                          ? 'bg-indigo-500 text-white dark:bg-indigo-600' 
+                          : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                      }`}>
                         {item.badge}
                       </span>
                     )}
                     {item.unreadCount !== undefined && item.unreadCount > 0 && (
-                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center">
+                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
                         {item.unreadCount}
                       </span>
                     )}
@@ -182,32 +186,68 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   id="nav-btn-admin"
                   onClick={() => onTabChange('admin')}
-                  className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-black transition-all whitespace-nowrap ${
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
                     activeTab === 'admin'
-                      ? 'bg-purple-600 text-white shadow-md shadow-purple-950'
-                      : 'text-purple-300 hover:text-white hover:bg-purple-950/50 border border-purple-500/40'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 border border-purple-200 dark:border-purple-900'
                   }`}
                 >
-                  <ShieldAlert className="w-4 h-4 text-purple-300 shrink-0" />
+                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
                   <span>Modération</span>
                 </button>
               )}
             </nav>
 
-            {/* Right: Friends Button + Notification Box + Document Search + Dark Mode + Profile + Menu Button */}
-            <div className="flex items-center space-x-1 sm:space-x-2 shrink-0">
+            {/* Right: Reels + Messages (exterior for mobile) + Friends Button + Notification Box + Document Search + Dark Mode + Profile + Menu Button */}
+            <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
               
+              {/* Direct Exterior REELS button for mobile/tablet */}
+              <button
+                id="header-direct-reels-btn"
+                onClick={() => onTabChange('reels')}
+                className={`lg:hidden relative p-2 rounded-xl transition flex items-center space-x-1 text-xs font-semibold shrink-0 ${
+                  activeTab === 'reels'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                }`}
+                title="Reels (<60s)"
+              >
+                <Film className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <span className="text-[9px] font-bold px-1 rounded-full bg-indigo-500 text-white hidden sm:inline">
+                  &lt;60s
+                </span>
+              </button>
+
+              {/* Direct Exterior CONVERSATIONS button for mobile/tablet */}
+              <button
+                id="header-direct-chat-btn"
+                onClick={() => onTabChange('chat')}
+                className={`lg:hidden relative p-2 rounded-xl transition flex items-center space-x-1 text-xs font-semibold shrink-0 ${
+                  activeTab === 'chat'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80'
+                }`}
+                title="Messagerie instantanée"
+              >
+                <MessageCircle className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white dark:border-[#0b0f19] animate-pulse">
+                    {unreadMessagesCount}
+                  </span>
+                )}
+              </button>
+
               {/* Amis & Invitations Button */}
               {onOpenFriendsModal && (
                 <button
                   onClick={onOpenFriendsModal}
-                  className="relative p-2 text-slate-300 hover:text-teal-300 hover:bg-slate-800/80 rounded-xl transition flex items-center space-x-1 text-xs font-semibold shrink-0"
+                  className="relative p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition flex items-center space-x-1 text-xs font-medium shrink-0"
                   title="Gérer les amis et invitations"
                 >
-                  <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-teal-400" />
+                  <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                   <span className="hidden xl:inline">Amis</span>
                   {pendingFriendRequestsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center border-2 border-slate-900 shadow-sm animate-pulse">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white dark:border-[#0b0f19] shadow-xs animate-pulse">
                       {pendingFriendRequestsCount}
                     </span>
                   )}
@@ -232,10 +272,10 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Quick Document Search button */}
               <button
                 onClick={onOpenDocSearch}
-                className="p-2 text-slate-300 hover:text-teal-300 hover:bg-slate-800/80 rounded-xl transition flex items-center space-x-1 text-xs font-semibold shrink-0"
+                className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition flex items-center space-x-1 text-xs font-medium shrink-0"
                 title="Rechercher des documents, cours, vocaux"
               >
-                <Files className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-teal-400" />
+                <Files className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                 <span className="hidden 2xl:inline">Docs</span>
               </button>
 
@@ -243,23 +283,23 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="theme-toggle-btn"
                 onClick={onToggleDarkMode}
-                className="p-2 text-slate-300 hover:text-amber-300 hover:bg-slate-800/80 rounded-xl transition shrink-0"
+                className="p-2 text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition shrink-0"
                 title={darkMode ? "Passer en mode clair" : "Activer le mode sombre"}
               >
                 {darkMode ? (
                   <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-400" />
                 ) : (
-                  <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-300" />
+                  <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-600" />
                 )}
               </button>
 
               {/* Current User Profile chip (Clicks to open Mon Profil directly!) */}
               <div
                 onClick={() => onTabChange('profile')}
-                className={`hidden sm:flex items-center space-x-2 border cursor-pointer py-1 px-2.5 rounded-xl transition shrink-0 ${
+                className={`hidden sm:flex items-center space-x-2 py-1 px-2 rounded-xl transition cursor-pointer shrink-0 border ${
                   activeTab === 'profile'
-                    ? 'bg-teal-600/30 border-teal-400 text-white'
-                    : 'bg-slate-800/80 dark:bg-slate-900 border-slate-700 hover:border-teal-500/50'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200'
+                    : 'bg-slate-100/80 dark:bg-slate-850 border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
                 title="Consulter mon profil et mes publications"
               >
@@ -267,7 +307,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <img
                     src={currentUser.avatarUrl}
                     alt={currentUser.prenom}
-                    className="w-7 h-7 rounded-full object-cover border border-teal-500 shrink-0"
+                    className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                     referrerPolicy="no-referrer"
                   />
                   {currentUser.isLocked && (
@@ -277,10 +317,10 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
                 <div className="text-left min-w-0 max-w-[100px]">
-                  <div className="text-xs font-bold text-slate-100 truncate">
+                  <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
                     {currentUser.prenom}
                   </div>
-                  <div className="text-[10px] text-teal-300 font-medium truncate">
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
                     {currentUser.promo || 'Profil'}
                   </div>
                 </div>
@@ -290,12 +330,12 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="mobile-sliding-panel-btn"
                 onClick={onToggleSlidingPanel}
-                className="p-2 sm:px-2.5 sm:py-2 text-white bg-slate-800 hover:bg-teal-600 border border-slate-700 hover:border-teal-500 rounded-xl transition flex items-center space-x-1.5 shrink-0 shadow-sm"
+                className="p-2 sm:px-2.5 sm:py-2 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700/80 rounded-xl transition flex items-center space-x-1.5 shrink-0"
                 title="Ouvrir le menu complet"
                 aria-label="Menu coulissant"
               >
-                <Menu className="w-5 h-5 text-teal-400" />
-                <span className="hidden sm:inline text-xs font-bold text-slate-200">
+                <Menu className="w-4 h-4 text-slate-700 dark:text-slate-200" />
+                <span className="hidden sm:inline text-xs font-semibold">
                   Menu
                 </span>
               </button>

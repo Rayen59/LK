@@ -14,11 +14,13 @@ import { ReelsView } from './components/ReelsView';
 import { ChatView } from './components/ChatView';
 import { ProfileView } from './components/ProfileView';
 import { FriendsModal } from './components/FriendsModal';
+import { Film, MessageCircle, Sparkles, Users } from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [activeTab, setActiveTab] = useState<MainTabType>('feed');
+  const [tabHistory, setTabHistory] = useState<MainTabType[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [latestPushNotification, setLatestPushNotification] = useState<AppNotification | null>(null);
@@ -29,6 +31,7 @@ export default function App() {
   // Social Media Features State
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
   const [chatPartnerId, setChatPartnerId] = useState<string | null>(null);
+  const [isChatConversationOpen, setIsChatConversationOpen] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [unreadDirectMessagesCount, setUnreadDirectMessagesCount] = useState(0);
   const [pendingFriendRequestsCount, setPendingFriendRequestsCount] = useState(0);
@@ -227,6 +230,50 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
+  const navigateToTab = (tab: MainTabType, keepHistory = true) => {
+    if (tab !== activeTab && keepHistory) {
+      setTabHistory((prev) => [...prev, activeTab]);
+    }
+    if (tab === 'profile') {
+      setSelectedProfileUserId(currentUser?.id || null);
+    }
+    if (tab !== 'chat') {
+      setChatPartnerId(null);
+    }
+    setActiveTab(tab);
+    setIsSlidingPanelOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGoBack = () => {
+    if (activeTab === 'chat' && chatPartnerId) {
+      setChatPartnerId(null);
+      return;
+    }
+    if (activeTab === 'profile' && selectedProfileUserId && selectedProfileUserId !== currentUser?.id) {
+      setSelectedProfileUserId(currentUser?.id || null);
+      return;
+    }
+    if (tabHistory.length > 0) {
+      const prevTab = tabHistory[tabHistory.length - 1];
+      setTabHistory((prev) => prev.slice(0, -1));
+      setActiveTab(prevTab);
+      if (prevTab !== 'chat') setChatPartnerId(null);
+      if (prevTab !== 'profile') setSelectedProfileUserId(currentUser?.id || null);
+    } else {
+      setActiveTab('feed');
+      setChatPartnerId(null);
+      setSelectedProfileUserId(currentUser?.id || null);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const canGoBack =
+    activeTab !== 'feed' ||
+    (activeTab === 'chat' && chatPartnerId !== null) ||
+    (activeTab === 'profile' && selectedProfileUserId !== currentUser?.id) ||
+    tabHistory.length > 0;
+
   const handleLogout = () => {
     api.auth.logout();
     setCurrentUser(null);
@@ -235,12 +282,14 @@ export default function App() {
   };
 
   const handleOpenUserProfile = (userId: string) => {
+    setTabHistory((prev) => [...prev, activeTab]);
     setSelectedProfileUserId(userId);
     setActiveTab('profile');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenChatWithUser = (partnerId: string) => {
+    setTabHistory((prev) => [...prev, activeTab]);
     setChatPartnerId(partnerId);
     setActiveTab('chat');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -272,19 +321,15 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200">
+    <div className={`min-h-screen ${activeTab === 'chat' ? 'h-screen overflow-hidden' : ''} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200`}>
       
       {/* Header */}
       <Header
         currentUser={currentUser}
         activeTab={activeTab}
-        onTabChange={(tab) => {
-          if (tab === 'profile') {
-            setSelectedProfileUserId(currentUser.id);
-          }
-          setActiveTab(tab);
-          setIsSlidingPanelOpen(false);
-        }}
+        canGoBack={canGoBack}
+        onGoBack={handleGoBack}
+        onTabChange={(tab) => navigateToTab(tab)}
         onLogout={handleLogout}
         isLiveConnected={isLiveConnected}
         darkMode={darkMode}
@@ -305,7 +350,7 @@ export default function App() {
       />
 
       {/* Main Tab Content */}
-      <main className="flex-1 pb-16">
+      <main className={activeTab === 'chat' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'flex-1 pb-20 lg:pb-12'}>
         {activeTab === 'feed' && (
           <FeedView
             currentUser={currentUser}
@@ -319,6 +364,8 @@ export default function App() {
           <ReelsView
             currentUser={currentUser}
             onOpenUserProfile={handleOpenUserProfile}
+            onOpenChatWithUser={handleOpenChatWithUser}
+            onGoBack={handleGoBack}
           />
         )}
 
@@ -327,6 +374,8 @@ export default function App() {
             currentUser={currentUser}
             initialPartnerId={chatPartnerId}
             onOpenUserProfile={handleOpenUserProfile}
+            onGoBack={handleGoBack}
+            onConversationStateChange={setIsChatConversationOpen}
           />
         )}
 
@@ -339,20 +388,21 @@ export default function App() {
             }}
             onOpenChatWithUser={handleOpenChatWithUser}
             onOpenUserProfile={handleOpenUserProfile}
-            onOpenReelsView={() => setActiveTab('reels')}
+            onOpenReelsView={() => navigateToTab('reels')}
+            onGoBack={handleGoBack}
           />
         )}
 
         {activeTab === 'forums' && (
-          <ForumsView currentUser={currentUser} />
+          <ForumsView currentUser={currentUser} onGoBack={handleGoBack} />
         )}
 
         {activeTab === 'quizzes' && (
-          <QuizView currentUser={currentUser} />
+          <QuizView currentUser={currentUser} onGoBack={handleGoBack} />
         )}
 
         {activeTab === 'polls' && (
-          <PollsView currentUser={currentUser} />
+          <PollsView currentUser={currentUser} onGoBack={handleGoBack} />
         )}
 
         {activeTab === 'spaces' && (
@@ -360,13 +410,100 @@ export default function App() {
             currentUser={currentUser}
             allPosts={posts}
             onRefresh={loadPosts}
+            onGoBack={handleGoBack}
           />
         )}
 
         {activeTab === 'admin' && (
-          <AdminView currentUser={currentUser} />
+          <AdminView currentUser={currentUser} onGoBack={handleGoBack} />
         )}
       </main>
+
+      {/* Mobile/Tablet Exterior Bottom Navigation Bar (Hidden when inside active chat conversation) */}
+      <nav className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex items-center justify-around py-2 px-1 shadow-lg ${
+        activeTab === 'chat' && isChatConversationOpen ? 'hidden' : 'flex'
+      }`}>
+        <button
+          onClick={() => navigateToTab('feed')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold transition ${
+            activeTab === 'feed'
+              ? 'text-indigo-600 dark:text-indigo-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <Sparkles className="w-5 h-5 mb-0.5" />
+          <span>Fil</span>
+        </button>
+
+        <button
+          onClick={() => navigateToTab('reels')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold transition relative ${
+            activeTab === 'reels'
+              ? 'text-rose-600 dark:text-rose-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-rose-500'
+          }`}
+        >
+          <div className="relative">
+            <Film className="w-5 h-5 mb-0.5" />
+            <span className="absolute -top-1 -right-2 text-[8px] font-bold bg-rose-500 text-white rounded-full px-1">
+              &lt;60s
+            </span>
+          </div>
+          <span>Reels</span>
+        </button>
+
+        <button
+          onClick={() => navigateToTab('chat')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold transition relative ${
+            activeTab === 'chat'
+              ? 'text-indigo-600 dark:text-indigo-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-indigo-500'
+          }`}
+        >
+          <div className="relative">
+            <MessageCircle className="w-5 h-5 mb-0.5" />
+            {unreadDirectMessagesCount > 0 && (
+              <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                {unreadDirectMessagesCount}
+              </span>
+            )}
+          </div>
+          <span>Messages</span>
+        </button>
+
+        <button
+          onClick={() => setShowFriendsModal(true)}
+          className="flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition relative"
+        >
+          <div className="relative">
+            <Users className="w-5 h-5 mb-0.5" />
+            {pendingFriendRequestsCount > 0 && (
+              <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                {pendingFriendRequestsCount}
+              </span>
+            )}
+          </div>
+          <span>Amis</span>
+        </button>
+
+        <button
+          onClick={() => navigateToTab('profile')}
+          className={`flex flex-col items-center justify-center flex-1 py-1 text-[11px] font-bold transition ${
+            activeTab === 'profile'
+              ? 'text-indigo-600 dark:text-indigo-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          <img
+            src={currentUser.avatarUrl}
+            alt={currentUser.prenom}
+            className={`w-5 h-5 rounded-full object-cover mb-0.5 border ${
+              activeTab === 'profile' ? 'border-indigo-500' : 'border-slate-300 dark:border-slate-700'
+            }`}
+          />
+          <span>Profil</span>
+        </button>
+      </nav>
 
       {/* Friends & Invitations Modal */}
       <FriendsModal
@@ -387,17 +524,19 @@ export default function App() {
         posts={posts}
       />
 
-      {/* Modern Footer */}
-      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="font-medium text-slate-700 dark:text-slate-300">
-            © {new Date().getFullYear()} Pulse Social • Réseau Social & Académique
-          </p>
-          <p className="text-slate-400 dark:text-slate-500 text-[11px]">
-            Partage de publications, Reels &lt;60s, Messagerie instantanée, Contrôle IA de tolérance & Confidentialité
-          </p>
-        </div>
-      </footer>
+      {/* Modern Footer (Hidden when activeTab === 'chat') */}
+      {activeTab !== 'chat' && (
+        <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="font-medium text-slate-700 dark:text-slate-300">
+              © {new Date().getFullYear()} Pulse Social • Réseau Social & Académique
+            </p>
+            <p className="text-slate-400 dark:text-slate-500 text-[11px]">
+              Partage de publications, Reels &lt;60s, Messagerie instantanée, Contrôle IA de tolérance & Confidentialité
+            </p>
+          </div>
+        </footer>
+      )}
 
     </div>
   );

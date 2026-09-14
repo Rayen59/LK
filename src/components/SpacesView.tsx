@@ -16,7 +16,8 @@ import {
   Sparkles,
   Search,
   Tag,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from 'lucide-react';
 
 interface SpacesViewProps {
@@ -137,42 +138,42 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
     : [];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
       {/* Top back navigation button */}
       {onGoBack && (
         <div className="mb-4">
           <button
             onClick={onGoBack}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-teal-600 font-bold text-xs shadow-xs transition group"
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold text-xs shadow-2xs transition group"
             title="Revenir à la page précédente"
           >
-            <ArrowLeft className="w-4 h-4 text-teal-500 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-4 h-4 text-indigo-500 group-hover:-translate-x-0.5 transition-transform" />
             <span>Revenir à la page précédente</span>
           </button>
         </div>
       )}
 
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-gradient-to-r from-slate-900 to-teal-950 p-6 rounded-2xl text-white shadow-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-slate-900 border border-slate-800 p-6 rounded-3xl text-white shadow-sm">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-teal-400 mb-1">
+          <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1">
             <Bookmark className="w-4 h-4" />
             <span>Organisation Personnelle</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
-            Mes Espaces & Dossiers Sauvegardés
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+            Mes Espaces & Dossiers
           </h2>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1 max-w-xl">
+          <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl">
             Enregistrez et classez les publications, photos, vocaux et fichiers par thématique ou projet personnel.
           </p>
         </div>
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition"
+          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition"
         >
           <FolderPlus className="w-4 h-4" />
-          <span>Créer un nouvel Espace</span>
+          <span>Nouvel Espace</span>
         </button>
       </div>
 
@@ -181,16 +182,16 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
         
         {/* Left Column: Folders List */}
         <div className="lg:col-span-1 space-y-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Catégorie de classement :
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Catégorie :
               </span>
             </div>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-600"
+              className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-800 dark:text-white focus:outline-hidden focus:border-indigo-500"
             >
               {CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
@@ -200,22 +201,25 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
             </select>
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-2">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center space-x-1.5">
-                <Layers className="w-4 h-4 text-teal-600" />
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs p-4 space-y-2">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                <Layers className="w-4 h-4 text-indigo-500" />
                 <span>Dossiers créés ({filteredSpaces.length})</span>
               </span>
             </div>
 
             {loading ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Chargement des espaces...</p>
+              <div className="py-8 flex flex-col items-center justify-center text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin text-indigo-500 mb-1" />
+                <span className="text-xs">Chargement...</span>
+              </div>
             ) : filteredSpaces.length === 0 ? (
               <div className="text-center py-8 px-4">
-                <Folder className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-slate-700">Aucun espace dans cette catégorie</p>
+                <Folder className="w-8 h-8 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">Aucun espace dans cette catégorie</p>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Cliquez sur "Créer un nouvel Espace" pour commencer à classer.
+                  Cliquez sur "Nouvel Espace" pour commencer à classer.
                 </p>
               </div>
             ) : (
@@ -225,19 +229,19 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
                   <div
                     key={space.id}
                     onClick={() => setSelectedSpace(space)}
-                    className={`group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all ${
+                    className={`group flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all ${
                       isSelected
-                        ? 'bg-teal-600 text-white shadow-md'
-                        : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center space-x-3 truncate">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-white/20' : 'bg-teal-100 text-teal-700'}`}>
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? 'bg-white/20' : 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400'}`}>
                         <Folder className="w-4 h-4" />
                       </div>
                       <div className="truncate">
                         <div className="text-xs font-bold truncate">{space.name}</div>
-                        <div className={`text-[10px] ${isSelected ? 'text-teal-100' : 'text-slate-500'}`}>
+                        <div className={`text-[10px] ${isSelected ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
                           {space.category} • {space.postIds.length} fichier(s)
                         </div>
                       </div>
@@ -250,7 +254,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
                           setSpaceToDelete(space);
                         }}
                         className={`p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition ${
-                          isSelected ? 'text-teal-200 hover:text-white hover:bg-teal-700' : 'text-slate-400 hover:text-red-600 hover:bg-slate-200'
+                          isSelected ? 'text-indigo-200 hover:text-white hover:bg-indigo-700' : 'text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-700'
                         }`}
                         title="Supprimer cet espace"
                       >
@@ -270,38 +274,38 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
           {selectedSpace ? (
             <div className="space-y-4">
               {/* Space Header Card */}
-              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs flex items-center justify-between">
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-center justify-between">
                 <div>
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => setSelectedSpace(null)}
-                      className="inline-flex items-center space-x-1 text-xs text-teal-600 hover:text-teal-800 font-bold mr-1 group"
+                      className="inline-flex items-center space-x-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-bold mr-1 group"
                       title="Revenir à tous les espaces"
                     >
                       <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                       <span>Tous les espaces</span>
                     </button>
-                    <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/40">
                       {selectedSpace.category}
                     </span>
                     <span className="text-xs text-slate-400">
-                      {selectedSpace.postIds.length} publication(s) classée(s)
+                      {selectedSpace.postIds.length} publication(s)
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1">{selectedSpace.name}</h3>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mt-1">{selectedSpace.name}</h3>
                   {selectedSpace.description && (
-                    <p className="text-xs text-slate-500 mt-1">{selectedSpace.description}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{selectedSpace.description}</p>
                   )}
                 </div>
               </div>
 
               {/* Saved Posts List */}
               {currentSpacePosts.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
-                  <Bookmark className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                  <h4 className="text-sm font-bold text-slate-800">Cet espace est encore vide</h4>
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center">
+                  <Bookmark className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-white">Cet espace est encore vide</h4>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                    Depuis le fil d'actualité, cliquez sur "Classer dans un espace" sur n'importe quel cours, document ou note vocale pour l'ajouter ici.
+                    Depuis le fil d'actualité, cliquez sur "Classer dans un espace" sur n'importe quel contenu pour l'ajouter ici.
                   </p>
                 </div>
               ) : (
@@ -309,27 +313,29 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
                   {currentSpacePosts.map((post) => (
                     <div
                       key={post.id}
-                      className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3"
+                      className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs space-y-3"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-3">
                           <img
                             src={post.authorAvatar}
                             alt={post.authorName}
-                            className="w-8 h-8 rounded-full object-cover border border-slate-200"
+                            className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                             referrerPolicy="no-referrer"
                           />
                           <div>
-                            <span className="text-xs font-bold text-slate-900">{post.authorName}</span>
-                            <span className="text-[10px] text-teal-700 font-semibold bg-teal-50 px-1.5 py-0.5 rounded ml-2">
-                              {post.authorPromo}
-                            </span>
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">{post.authorName}</span>
+                            {post.authorPromo && (
+                              <span className="text-[10px] text-indigo-700 dark:text-indigo-400 font-semibold bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded-full ml-2 border border-indigo-100 dark:border-indigo-900/40">
+                                {post.authorPromo}
+                              </span>
+                            )}
                           </div>
                         </div>
 
                         <button
                           onClick={() => handleRemovePostFromSpace(selectedSpace.id, post.id)}
-                          className="text-xs text-red-500 hover:text-red-700 flex items-center space-x-1 font-semibold hover:bg-red-50 px-2 py-1 rounded-lg transition"
+                          className="text-xs text-rose-500 hover:text-rose-700 flex items-center space-x-1 font-semibold hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2 py-1 rounded-lg transition"
                           title="Retirer de cet espace"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -338,7 +344,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
                       </div>
 
                       {post.content && (
-                        <p className="text-xs text-slate-800 whitespace-pre-wrap leading-relaxed">
+                        <p className="text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
                           {post.content}
                         </p>
                       )}
@@ -349,18 +355,18 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
                           {post.attachments.map((att) => (
                             <div
                               key={att.id}
-                              className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                              className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs"
                             >
                               <div className="flex items-center space-x-2 truncate">
-                                {att.type === 'document' && <FileText className="w-4 h-4 text-blue-600" />}
-                                {att.type === 'audio' && <Volume2 className="w-4 h-4 text-teal-600" />}
-                                {att.type === 'video' && <Film className="w-4 h-4 text-purple-600" />}
-                                <span className="truncate font-medium text-slate-700">{att.name}</span>
+                                {att.type === 'document' && <FileText className="w-4 h-4 text-blue-500" />}
+                                {att.type === 'audio' && <Volume2 className="w-4 h-4 text-indigo-500" />}
+                                {att.type === 'video' && <Film className="w-4 h-4 text-purple-500" />}
+                                <span className="truncate font-medium text-slate-700 dark:text-slate-300">{att.name}</span>
                               </div>
                               <a
                                 href={att.url}
                                 download={att.name}
-                                className="flex items-center space-x-1 text-teal-700 font-bold hover:underline"
+                                className="flex items-center space-x-1 text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
                               >
                                 <Download className="w-3.5 h-3.5" />
                                 <span>Ouvrir</span>
@@ -375,9 +381,9 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
               )}
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-              <Folder className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h4 className="text-sm font-bold text-slate-800">Sélectionnez un espace</h4>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center">
+              <Folder className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+              <h4 className="text-sm font-bold text-slate-800 dark:text-white">Sélectionnez un espace</h4>
               <p className="text-xs text-slate-500 mt-1">
                 Choisissez un dossier dans la liste de gauche ou créez-en un nouveau.
               </p>
@@ -390,32 +396,32 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
       {/* Modal to create a new space */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="p-6">
-              <h3 className="text-base font-bold text-slate-900 mb-1">Créer un nouvel Espace de Révision</h3>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Créer un nouvel Espace</h3>
               <p className="text-xs text-slate-500 mb-4">
-                Structurez vos révisions par module ou discipline clinique de la Faculté de Sfax.
+                Structurez vos sauvegardes par catégorie ou projet.
               </p>
 
               <form onSubmit={handleCreateSpace} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nom du dossier *</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nom du dossier *</label>
                   <input
                     type="text"
                     required
-                    placeholder="Ex: Cardiologie & ECG S1"
+                    placeholder="Ex: Idées Design & Code"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-teal-600 focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Classification médicale</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Classification</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-teal-600 focus:outline-none"
+                    className="w-full px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
                   >
                     {CATEGORIES.filter((c) => c !== 'Toutes les catégories').map((c) => (
                       <option key={c} value={c}>
@@ -426,28 +432,28 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Description (optionnel)</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Description (optionnel)</label>
                   <textarea
                     rows={2}
                     placeholder="Objectif de cet espace, projet, thématique..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-teal-600 focus:outline-none resize-none"
+                    className="w-full px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 resize-none"
                   />
                 </div>
 
-                <div className="flex justify-end space-x-2 pt-2">
+                <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-semibold"
+                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
                     disabled={creating}
-                    className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow transition disabled:opacity-50"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs transition disabled:opacity-50"
                   >
                     {creating ? 'Création...' : 'Créer l’espace'}
                   </button>
@@ -461,14 +467,14 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
       {/* Delete Space Modal */}
       {spaceToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-white rounded-2xl p-6 border border-slate-200 shadow-2xl text-center">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
               Supprimer cet espace ?
             </h3>
-            <p className="text-xs text-slate-500 mt-1 mb-5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
               Voulez-vous vraiment supprimer "{spaceToDelete.name}" ? Les publications d'origine ne seront pas supprimées.
             </p>
 
@@ -476,7 +482,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
               <button
                 type="button"
                 onClick={() => setSpaceToDelete(null)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold"
               >
                 Annuler
               </button>
@@ -484,7 +490,7 @@ export const SpacesView: React.FC<SpacesViewProps> = ({ currentUser, allPosts, o
                 type="button"
                 disabled={deletingSpace}
                 onClick={handleConfirmDeleteSpace}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow transition"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-xs transition"
               >
                 {deletingSpace ? 'Suppression...' : 'Supprimer'}
               </button>

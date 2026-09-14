@@ -103,82 +103,85 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         prev
           ? {
               ...prev,
-              user: { ...prev.user, isLocked: res.isLocked }
+              user: { ...prev.user, isLocked: newLockState }
             }
           : null
       );
-      onUpdateCurrentUser(res.user);
-      setActionSuccessMsg(res.message);
+      if (isSelf) {
+        onUpdateCurrentUser({ ...currentUser, isLocked: newLockState });
+      }
+      setActionSuccessMsg(
+        newLockState
+          ? 'Votre profil est désormais verrouillé. Seuls vos amis peuvent voir vos publications et reels.'
+          : 'Votre profil est désormais public et accessible à tous.'
+      );
       setTimeout(() => setActionSuccessMsg(null), 4000);
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de la mise à jour de la confidentialité.');
+      alert(err.message || 'Erreur lors de la modification de la confidentialité.');
     } finally {
       setTogglingLock(false);
     }
   };
 
-  // Send Friend Request
+  // Friend Actions
   const handleSendFriendRequest = async () => {
     try {
       setFriendActionLoading(true);
-      const res = await api.friends.sendRequest(targetUserId);
-      setActionSuccessMsg(res.message);
-      setTimeout(() => setActionSuccessMsg(null), 4000);
+      await api.friends.sendRequest(targetUserId);
+      setActionSuccessMsg('Demande d’ami envoyée !');
+      setTimeout(() => setActionSuccessMsg(null), 3000);
       loadProfile();
     } catch (err: any) {
-      alert(err.message || "Erreur lors de l'envoi de l'invitation.");
+      alert(err.message || 'Erreur lors de l’envoi de la demande.');
     } finally {
       setFriendActionLoading(false);
     }
   };
 
-  // Accept Friend Request
   const handleAcceptFriendRequest = async () => {
     try {
       setFriendActionLoading(true);
-      const res = await api.friends.acceptRequest(targetUserId);
-      setActionSuccessMsg(res.message);
-      setTimeout(() => setActionSuccessMsg(null), 4000);
+      await api.friends.acceptRequest(targetUserId);
+      setActionSuccessMsg('Demande d’ami acceptée !');
+      setTimeout(() => setActionSuccessMsg(null), 3000);
       loadProfile();
     } catch (err: any) {
-      alert(err.message || "Erreur lors de l'acceptation.");
+      alert(err.message || 'Erreur lors de l’acceptation de la demande.');
     } finally {
       setFriendActionLoading(false);
     }
   };
 
-  // Reject Friend Request
   const handleRejectFriendRequest = async () => {
     try {
       setFriendActionLoading(true);
-      const res = await api.friends.rejectRequest(targetUserId);
-      setActionSuccessMsg(res.message);
-      setTimeout(() => setActionSuccessMsg(null), 4000);
+      await api.friends.rejectRequest(targetUserId);
+      setActionSuccessMsg('Demande d’ami refusée.');
+      setTimeout(() => setActionSuccessMsg(null), 3000);
       loadProfile();
     } catch (err: any) {
-      alert(err.message || 'Erreur lors du refus.');
+      alert(err.message || 'Erreur lors du rejet.');
     } finally {
       setFriendActionLoading(false);
     }
   };
 
-  // Remove Friend
   const handleRemoveFriend = async () => {
-    if (!confirm('Voulez-vous vraiment retirer cet utilisateur de vos amis ?')) return;
+    if (!window.confirm('Voulez-vous vraiment retirer cet ami ?')) return;
     try {
       setFriendActionLoading(true);
-      const res = await api.friends.removeFriend(targetUserId);
-      setActionSuccessMsg(res.message);
-      setTimeout(() => setActionSuccessMsg(null), 4000);
+      await api.friends.removeFriend(targetUserId);
+      setActionSuccessMsg('Ami retiré.');
+      setTimeout(() => setActionSuccessMsg(null), 3000);
       loadProfile();
     } catch (err: any) {
-      alert(err.message || "Erreur lors du retrait de l'ami.");
+      alert(err.message || 'Erreur lors du retrait d’ami.');
     } finally {
       setFriendActionLoading(false);
     }
   };
 
-  // Block / Unblock User
+  // Block / Unblock Actions
   const handleToggleBlock = async () => {
     if (!profileData) return;
     try {
@@ -186,7 +189,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         const res = await api.users.unblock(targetUserId);
         setActionSuccessMsg(res.message);
       } else {
-        if (confirm(`Voulez-vous vraiment bloquer ${profileData.user.prenom} ${profileData.user.nom} ?`)) {
+        if (window.confirm('Êtes-vous sûr de vouloir bloquer cet utilisateur ? Vous ne verrez plus ses contenus et il ne pourra plus vous contacter.')) {
           const res = await api.users.block(targetUserId);
           setActionSuccessMsg(res.message);
         }
@@ -201,7 +204,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   if (loading) {
     return (
       <div className="w-full max-w-4xl mx-auto py-24 flex flex-col items-center justify-center text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-500 mb-3" />
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-3" />
         <p className="text-sm font-semibold">Chargement du profil...</p>
       </div>
     );
@@ -214,9 +217,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="mb-4 text-left">
             <button
               onClick={onGoBack}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-teal-600 font-bold text-xs shadow-xs transition"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 font-bold text-xs shadow-2xs transition"
             >
-              <ArrowLeft className="w-4 h-4 text-teal-500" />
+              <ArrowLeft className="w-4 h-4 text-indigo-500" />
               <span>Revenir à la page précédente</span>
             </button>
           </div>
@@ -239,10 +242,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="mb-3">
           <button
             onClick={onGoBack}
-            className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-500/40 font-bold text-xs shadow-xs transition group"
+            className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-500/40 font-bold text-xs shadow-2xs transition group"
             title="Revenir à la page précédente"
           >
-            <ArrowLeft className="w-4 h-4 text-teal-500 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-4 h-4 text-indigo-500 group-hover:-translate-x-0.5 transition-transform" />
             <span>Revenir à la page précédente</span>
           </button>
         </div>
@@ -250,16 +253,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* Success alert message */}
       {actionSuccessMsg && (
-        <div className="mb-4 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center space-x-2 animate-fade-in shadow-xs">
+        <div className="mb-4 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center space-x-2 shadow-2xs">
           <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
           <span>{actionSuccessMsg}</span>
         </div>
       )}
 
       {/* Main Profile Header Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-md overflow-hidden mb-6">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden mb-6">
         {/* Banner */}
-        <div className="h-36 sm:h-44 bg-gradient-to-r from-teal-600 via-cyan-600 to-indigo-600 relative">
+        <div className="h-36 sm:h-44 bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 relative">
           {user.isLocked && (
             <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-amber-300 flex items-center space-x-1.5 border border-amber-400/30">
               <Lock className="w-3.5 h-3.5" />
@@ -279,7 +282,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-white dark:border-slate-900 shadow-xl bg-slate-800"
               />
               {user.role === 'admin' && (
-                <span className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-purple-600 text-white text-[10px] font-black uppercase border-2 border-white dark:border-slate-900">
+                <span className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase border-2 border-white dark:border-slate-900">
                   Admin
                 </span>
               )}
@@ -292,7 +295,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <button
                   onClick={handleToggleLock}
                   disabled={togglingLock}
-                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-xs ${
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-2xs ${
                     user.isLocked
                       ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700'
@@ -320,7 +323,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <button
                       onClick={handleSendFriendRequest}
                       disabled={friendActionLoading || isBlockedByMe}
-                      className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-sm transition disabled:opacity-50"
+                      className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition disabled:opacity-50"
                     >
                       <UserPlus className="w-4 h-4" />
                       <span>Ajouter en ami</span>
@@ -342,7 +345,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       <button
                         onClick={handleAcceptFriendRequest}
                         disabled={friendActionLoading}
-                        className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition"
+                        className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition"
                       >
                         <UserCheck className="w-4 h-4" />
                         <span>Accepter l'invitation</span>
@@ -362,7 +365,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <button
                       onClick={handleRemoveFriend}
                       disabled={friendActionLoading}
-                      className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 text-xs font-bold hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
+                      className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
                       title="Cliquer pour retirer des amis"
                     >
                       <UserCheck className="w-4 h-4" />
@@ -374,9 +377,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <button
                     onClick={() => onOpenChatWithUser(targetUserId)}
                     disabled={isBlockedByMe}
-                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs shadow-xs transition"
+                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs shadow-2xs transition"
                   >
-                    <MessageCircle className="w-4 h-4 text-teal-500" />
+                    <MessageCircle className="w-4 h-4 text-indigo-500" />
                     <span>Message direct</span>
                   </button>
 
@@ -409,7 +412,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </span>
               )}
             </h2>
-            <p className="text-xs sm:text-sm font-semibold text-teal-600 dark:text-teal-400 mt-0.5">
+            <p className="text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400 mt-0.5">
               {user.promo || 'Étudiant'}
             </p>
             {user.bio && (
@@ -446,8 +449,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* CONTENT AREA: Check for Profile Lock Restriction */}
       {isRestrictedView ? (
         // LOCKED PROFILE SHIELD
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-12 text-center shadow-sm">
-          <div className="w-16 h-16 rounded-3xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-12 text-center shadow-xs">
+          <div className="w-16 h-16 rounded-3xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800 shadow-2xs">
             <Lock className="w-8 h-8" />
           </div>
           <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2">
@@ -461,7 +464,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <button
               onClick={handleSendFriendRequest}
               disabled={friendActionLoading}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md transition"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition"
             >
               <UserPlus className="w-4 h-4" />
               <span>Envoyer une invitation d'ami</span>
@@ -484,7 +487,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               onClick={() => setActiveContentTab('posts')}
               className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition ${
                 activeContentTab === 'posts'
-                  ? 'bg-teal-600 text-white shadow-sm'
+                  ? 'bg-indigo-600 text-white shadow-2xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
@@ -496,7 +499,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               onClick={() => setActiveContentTab('reels')}
               className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition ${
                 activeContentTab === 'reels'
-                  ? 'bg-pink-600 text-white shadow-sm'
+                  ? 'bg-pink-600 text-white shadow-2xs'
                   : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
@@ -516,14 +519,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 posts.map((post) => (
                   <div
                     key={post.id}
-                    className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-xs"
+                    className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-6 shadow-2xs"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <img
                           src={post.authorAvatar}
                           alt={post.authorName}
-                          className="w-10 h-10 rounded-full object-cover border border-teal-500"
+                          className="w-10 h-10 rounded-full object-cover border border-indigo-500"
                         />
                         <div>
                           <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
@@ -540,7 +543,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       </div>
 
                       {post.category && (
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                           {post.category}
                         </span>
                       )}
@@ -562,9 +565,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                             href={att.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 hover:bg-teal-50 hover:text-teal-600 dark:hover:bg-teal-950/40 border border-slate-200 dark:border-slate-700 transition"
+                            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 border border-slate-200 dark:border-slate-700 transition"
                           >
-                            <FileText className="w-3.5 h-3.5 text-teal-500" />
+                            <FileText className="w-3.5 h-3.5 text-indigo-500" />
                             <span className="font-semibold">{att.name}</span>
                           </a>
                         ))}
@@ -601,7 +604,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <div
                       key={reel.id}
                       onClick={() => onOpenReelsView && onOpenReelsView()}
-                      className="relative rounded-2xl overflow-hidden bg-black aspect-[9/16] cursor-pointer group shadow-sm hover:shadow-lg transition transform hover:-translate-y-1"
+                      className="relative rounded-2xl overflow-hidden bg-black aspect-[9/16] cursor-pointer group shadow-2xs hover:shadow-lg transition transform hover:-translate-y-1"
                     >
                       <video
                         src={reel.videoUrl}

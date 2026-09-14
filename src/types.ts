@@ -82,6 +82,18 @@ export interface DirectMessageAttachment {
   duration?: number;
 }
 
+export interface DirectMessageReaction {
+  userId: string;
+  userName: string;
+  emoji: string;
+}
+
+export interface DirectMessageReplyQuote {
+  messageId: string;
+  senderName: string;
+  content: string;
+}
+
 export interface DirectMessage {
   id: string;
   senderId: string;
@@ -92,6 +104,14 @@ export interface DirectMessage {
   attachment?: DirectMessageAttachment;
   createdAt: string;
   isRead: boolean;
+  reactions?: DirectMessageReaction[];
+  replyTo?: DirectMessageReplyQuote;
+  isEdited?: boolean;
+  editedAt?: string;
+  deletedFor?: string[];
+  deletedForEveryone?: boolean;
+  isForwarded?: boolean;
+  isSending?: boolean;
 }
 
 export interface ReelComment {

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { User, DirectMessage, DirectMessageAttachment } from '../types';
-import { api, fileToDataUrl } from '../lib/api';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { User, DirectMessage, DirectMessageAttachment, DirectMessageReaction, DirectMessageReplyQuote } from '../types';
+import { api, fileToDataUrl, subscribeToLiveUpdates } from '../lib/api';
 import {
   Send,
   Image as ImageIcon,
@@ -23,22 +23,35 @@ import {
   RefreshCw,
   MoreVertical,
   Volume2,
-  ArrowLeft
+  ArrowLeft,
+  Heart,
+  Reply,
+  Edit2,
+  Trash2,
+  Forward,
+  CornerDownRight,
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { AudioRecorder } from './AudioRecorder';
+import { ForwardMessageModal } from './ForwardMessageModal';
 
 interface ChatViewProps {
   currentUser: User;
   initialPartnerId?: string | null;
   onOpenUserProfile: (userId: string) => void;
   onGoBack?: () => void;
+  onConversationStateChange?: (isOpen: boolean) => void;
 }
+
+const EMOJI_LIST = ['❤️', '😂', '😮', '😢', '🔥', '👍', '👏', '🎉'];
 
 export const ChatView: React.FC<ChatViewProps> = ({
   currentUser,
   initialPartnerId,
   onOpenUserProfile,
-  onGoBack
+  onGoBack,
+  onConversationStateChange
 }) => {
   // Conversation list state
   const [conversations, setConversations] = useState<
@@ -63,7 +76,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const [sending, setSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
 
-  // Audio voice note recording modal / drawer
+  // Reply & Edit state
+  const [replyingTo, setReplyingTo] = useState<DirectMessageReplyQuote | null>(null);
+  const [editingMessage, setEditingMessage] = useState<DirectMessage | null>(null);
+
+  // Context Menu state
+  const [contextMenuMessage, setContextMenuMessage] = useState<DirectMessage | null>(null);
+  const [heartBurstId, setHeartBurstId] = useState<string | null>(null);
+  const [confirmDeleteEveryone, setConfirmDeleteEveryone] = useState<DirectMessage | null>(null);
+
+  // Forward Modal state
+  const [forwardingMessage, setForwardingMessage] = useState<DirectMessage | null>(null);
+
+  // Audio voice note recording modal
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
 
   // Audio playback
@@ -73,17 +98,32 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // Menu options
   const [showPartnerMenu, setShowPartnerMenu] = useState(false);
 
+  // Cache in-memory messages per partner to prevent empty screens on re-entry or refresh
+  const messagesCache = useRef<{ [partnerId: string]: DirectMessage[] }>({});
+
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const messageStreamRef = useRef<HTMLDivElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const docInputRef = useRef<HTMLInputElement | null>(null);
+  const textInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Auto scroll to bottom
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+  // Long press timer ref for both mouse and touch
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTapRef = useRef<{ [msgId: string]: number }>({});
+  const isLongPressedRef = useRef<boolean>(false);
+
+  // Notify parent of active conversation state for responsive mobile navigation
+  useEffect(() => {
+    onConversationStateChange?.(activePartner !== null);
+  }, [activePartner, onConversationStateChange]);
+
+  // Auto scroll to bottom smoothly
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
-  };
+  }, []);
 
   // Load conversation list
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       const data = await api.chat.getConversations();
       setConversations(data.conversations || []);
@@ -92,63 +132,187 @@ export const ChatView: React.FC<ChatViewProps> = ({
     } finally {
       setLoadingConversations(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadConversations();
-  }, []);
+  }, [loadConversations]);
 
-  // Handle initialPartnerId if passed
-  useEffect(() => {
-    if (initialPartnerId) {
-      selectPartnerById(initialPartnerId);
-    }
-  }, [initialPartnerId]);
-
-  const selectPartnerById = async (partnerId: string) => {
+  // Select a partner conversation
+  const selectPartnerById = useCallback(async (partnerId: string) => {
     try {
-      setLoadingMessages(true);
       setChatError(null);
+      setReplyingTo(null);
+      setEditingMessage(null);
+      setContextMenuMessage(null);
+      setConfirmDeleteEveryone(null);
+
+      // Check if we have cached messages for instant display (NO empty blank screen!)
+      const cached = messagesCache.current[partnerId];
+      if (cached && cached.length > 0) {
+        setMessages(cached);
+        setLoadingMessages(false);
+        setTimeout(() => scrollToBottom('auto'), 20);
+      } else {
+        setLoadingMessages(true);
+      }
+
       const res = await api.chat.getMessages(partnerId);
       setActivePartner(res.partner);
-      setMessages(res.messages || []);
+      const fetched = res.messages || [];
+      setMessages(fetched);
+      messagesCache.current[partnerId] = fetched;
+
       setIsBlocked(res.isBlocked);
       setIsBlockedByMe(res.isBlockedByMe);
       setIsBlockedByThem(res.isBlockedByThem);
-      setTimeout(() => scrollToBottom('auto'), 100);
+
+      setTimeout(() => scrollToBottom('auto'), 50);
       loadConversations();
     } catch (err: any) {
       setChatError(err.message || "Erreur d'accès à la conversation.");
     } finally {
       setLoadingMessages(false);
     }
-  };
+  }, [loadConversations, scrollToBottom]);
 
-  // Ultra-fast auto refresh when inside an active conversation (every 1.5s)
+  // Handle initialPartnerId if passed
+  useEffect(() => {
+    if (initialPartnerId) {
+      selectPartnerById(initialPartnerId);
+    }
+  }, [initialPartnerId, selectPartnerById]);
+
+  // Real-time SSE Live Updates Subscription for instant updates
+  useEffect(() => {
+    const unsubscribe = subscribeToLiveUpdates((event, payload) => {
+      if (event === 'NEW_DIRECT_MESSAGE') {
+        const newMsg: DirectMessage = payload.message;
+        if (!newMsg) return;
+
+        // If inside conversation with the other user, append or replace optimistic
+        if (
+          activePartner &&
+          ((newMsg.senderId === activePartner.id && newMsg.receiverId === currentUser.id) ||
+            (newMsg.senderId === currentUser.id && newMsg.receiverId === activePartner.id))
+        ) {
+          setMessages((prev) => {
+            const exists = prev.some((m) => m.id === newMsg.id);
+            let updated: DirectMessage[];
+            if (exists) {
+              updated = prev.map((m) => (m.id === newMsg.id ? newMsg : m));
+            } else {
+              const cleaned = prev.filter((m) => !m.isSending || m.content !== newMsg.content);
+              updated = [...cleaned, newMsg];
+            }
+            if (activePartner) {
+              messagesCache.current[activePartner.id] = updated;
+            }
+            return updated;
+          });
+          setTimeout(() => scrollToBottom('smooth'), 50);
+        }
+
+        // Always update conversation list snippet and unread badge
+        loadConversations();
+      } else if (event === 'MESSAGE_REACTION') {
+        const { messageId, reactions } = payload;
+        setMessages((prev) => {
+          const updated = prev.map((m) => (m.id === messageId ? { ...m, reactions } : m));
+          if (activePartner) {
+            messagesCache.current[activePartner.id] = updated;
+          }
+          return updated;
+        });
+      } else if (event === 'MESSAGE_EDITED') {
+        const { messageId, content, isEdited, editedAt } = payload;
+        setMessages((prev) => {
+          const updated = prev.map((m) =>
+            m.id === messageId ? { ...m, content, isEdited, editedAt } : m
+          );
+          if (activePartner) {
+            messagesCache.current[activePartner.id] = updated;
+          }
+          return updated;
+        });
+      } else if (event === 'MESSAGE_DELETED') {
+        const { messageId, mode, userId } = payload;
+        if (mode === 'for_everyone') {
+          setMessages((prev) => {
+            const updated = prev.map((m) =>
+              m.id === messageId
+                ? { ...m, deletedForEveryone: true, content: 'Ce message a été supprimé', attachment: undefined }
+                : m
+            );
+            if (activePartner) {
+              messagesCache.current[activePartner.id] = updated;
+            }
+            return updated;
+          });
+        } else if (mode === 'for_me' && userId === currentUser.id) {
+          setMessages((prev) => {
+            const updated = prev.filter((m) => m.id !== messageId);
+            if (activePartner) {
+              messagesCache.current[activePartner.id] = updated;
+            }
+            return updated;
+          });
+        }
+      } else if (event === 'MESSAGES_READ') {
+        if (activePartner && payload.readerId === activePartner.id) {
+          setMessages((prev) => {
+            const updated = prev.map((m) => (m.senderId === currentUser.id ? { ...m, isRead: true } : m));
+            if (activePartner) {
+              messagesCache.current[activePartner.id] = updated;
+            }
+            return updated;
+          });
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [activePartner, currentUser.id, loadConversations, scrollToBottom]);
+
+  // Fast background polling (2s) that NEVER flashes or wipes the message list
   useEffect(() => {
     if (!activePartner) return;
 
+    const partnerId = activePartner.id;
     const refreshInterval = setInterval(async () => {
       try {
-        const res = await api.chat.getMessages(activePartner.id);
+        const res = await api.chat.getMessages(partnerId);
+        if (!res || !res.messages) return;
+
         setMessages((prev) => {
-          // Compare length and IDs to avoid unnecessary re-renders
-          if (res.messages.length !== prev.length || res.messages[res.messages.length - 1]?.id !== prev[prev.length - 1]?.id) {
-            setTimeout(() => scrollToBottom('smooth'), 50);
+          // Compare message count and latest message timestamp/reactions count
+          const prevLast = prev[prev.length - 1];
+          const newLast = res.messages[res.messages.length - 1];
+
+          const hasNewMsg = res.messages.length !== prev.length || prevLast?.id !== newLast?.id;
+          const hasEditsOrReactions = JSON.stringify(prev.map(m => ({ id: m.id, r: m.reactions?.length, c: m.content }))) !==
+            JSON.stringify(res.messages.map((m: DirectMessage) => ({ id: m.id, r: m.reactions?.length, c: m.content })));
+
+          if (hasNewMsg || hasEditsOrReactions) {
+            messagesCache.current[partnerId] = res.messages;
+            if (hasNewMsg) {
+              setTimeout(() => scrollToBottom('smooth'), 50);
+            }
             return res.messages;
           }
           return prev;
         });
+
         setIsBlocked(res.isBlocked);
         setIsBlockedByMe(res.isBlockedByMe);
         setIsBlockedByThem(res.isBlockedByThem);
       } catch (e) {
         // Silent fail in polling
       }
-    }, 1500);
+    }, 2000);
 
     return () => clearInterval(refreshInterval);
-  }, [activePartner]);
+  }, [activePartner, scrollToBottom]);
 
   // Search users to start a new chat
   useEffect(() => {
@@ -160,44 +324,307 @@ export const ChatView: React.FC<ChatViewProps> = ({
       try {
         setIsSearchingUsers(true);
         const data = await api.users.search(searchQuery.trim());
-        // Exclude current user
         setSearchResults(data.users.filter((u) => u.id !== currentUser.id));
       } catch (err) {
         console.error(err);
       } finally {
         setIsSearchingUsers(false);
       }
-    }, 300);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [searchQuery, currentUser.id]);
 
-  // Send message
+  // Send or Edit message handler
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activePartner) return;
     if (!inputText.trim() && !pendingAttachment) return;
     if (isBlocked) return;
 
-    try {
-      setSending(true);
-      setChatError(null);
+    // Handle Editing existing message
+    if (editingMessage) {
+      const newText = inputText.trim();
+      const targetId = editingMessage.id;
+      setEditingMessage(null);
+      setInputText('');
 
-      const res = await api.chat.sendMessage({
-        receiverId: activePartner.id,
-        content: inputText.trim(),
-        attachment: pendingAttachment || undefined
+      // Optimistic update
+      setMessages((prev) => {
+        const updated = prev.map((m) =>
+          m.id === targetId ? { ...m, content: newText, isEdited: true } : m
+        );
+        messagesCache.current[activePartner.id] = updated;
+        return updated;
       });
 
-      setMessages((prev) => [...prev, res.message]);
-      setInputText('');
-      setPendingAttachment(null);
-      setTimeout(() => scrollToBottom('smooth'), 50);
+      try {
+        await api.chat.editMessage(targetId, newText);
+      } catch (err: any) {
+        setChatError(err.message || 'Erreur lors de la modification.');
+      }
+      return;
+    }
+
+    // Normal Send message (with instantaneous optimistic rendering)
+    const textToSend = inputText.trim();
+    const attToSend = pendingAttachment;
+    const replyToSend = replyingTo;
+
+    const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const optimisticMsg: DirectMessage = {
+      id: tempId,
+      senderId: currentUser.id,
+      senderName: `${currentUser.prenom} ${currentUser.nom}`,
+      senderAvatar: currentUser.avatarUrl,
+      receiverId: activePartner.id,
+      content: textToSend,
+      attachment: attToSend || undefined,
+      replyTo: replyToSend || undefined,
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      isSending: true,
+      reactions: []
+    };
+
+    // Instant optimistic render!
+    setMessages((prev) => {
+      const updated = [...prev, optimisticMsg];
+      messagesCache.current[activePartner.id] = updated;
+      return updated;
+    });
+
+    setInputText('');
+    setPendingAttachment(null);
+    setReplyingTo(null);
+    setChatError(null);
+    setTimeout(() => scrollToBottom('smooth'), 10);
+
+    try {
+      setSending(true);
+      const res = await api.chat.sendMessage({
+        receiverId: activePartner.id,
+        content: textToSend,
+        attachment: attToSend || undefined,
+        replyTo: replyToSend || undefined
+      });
+
+      // Replace optimistic message with actual persisted message
+      setMessages((prev) => {
+        const updated = prev.map((m) => (m.id === tempId ? res.message : m));
+        messagesCache.current[activePartner.id] = updated;
+        return updated;
+      });
       loadConversations();
     } catch (err: any) {
       setChatError(err.message || "Erreur lors de l'envoi du message.");
+      setMessages((prev) => {
+        const updated = prev.filter((m) => m.id !== tempId);
+        messagesCache.current[activePartner.id] = updated;
+        return updated;
+      });
     } finally {
       setSending(false);
+    }
+  };
+
+  // Double Click / Double Tap to LIKE (❤️)
+  const handleToggleLike = async (msg: DirectMessage) => {
+    if (msg.deletedForEveryone) return;
+
+    // Trigger Heart burst visual
+    setHeartBurstId(msg.id);
+    setTimeout(() => setHeartBurstId(null), 850);
+
+    // Optimistic toggle
+    const currentReactions = msg.reactions || [];
+    const hasHeart = currentReactions.some(
+      (r) => r.userId === currentUser.id && r.emoji === '❤️'
+    );
+
+    let updatedReactions: DirectMessageReaction[];
+    if (hasHeart) {
+      updatedReactions = currentReactions.filter(
+        (r) => !(r.userId === currentUser.id && r.emoji === '❤️')
+      );
+    } else {
+      updatedReactions = [
+        ...currentReactions.filter((r) => r.userId !== currentUser.id),
+        {
+          userId: currentUser.id,
+          userName: `${currentUser.prenom} ${currentUser.nom}`,
+          emoji: '❤️'
+        }
+      ];
+    }
+
+    setMessages((prev) => {
+      const updated = prev.map((m) => (m.id === msg.id ? { ...m, reactions: updatedReactions } : m));
+      if (activePartner) {
+        messagesCache.current[activePartner.id] = updated;
+      }
+      return updated;
+    });
+
+    try {
+      await api.chat.toggleReaction(msg.id, '❤️');
+    } catch (err) {
+      console.error('Failed to react', err);
+    }
+  };
+
+  // Long press handling for desktop mouse
+  const handleMouseDown = (msg: DirectMessage) => {
+    isLongPressedRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressedRef.current = true;
+      setContextMenuMessage(msg);
+    }, 450);
+  };
+
+  const handleMouseUp = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // Touch handlers for mobile
+  const handleTouchStart = (msg: DirectMessage) => {
+    isLongPressedRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressedRef.current = true;
+      setContextMenuMessage(msg);
+    }, 450);
+  };
+
+  const handleTouchEnd = (msg: DirectMessage) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    if (isLongPressedRef.current) return;
+
+    // Check for double tap
+    const now = Date.now();
+    const lastTap = lastTapRef.current[msg.id] || 0;
+    if (now - lastTap < 320) {
+      // Double tap detected!
+      handleToggleLike(msg);
+      lastTapRef.current[msg.id] = 0;
+    } else {
+      lastTapRef.current[msg.id] = now;
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // Emoji reaction pick from context menu
+  const handleSelectEmoji = async (msg: DirectMessage, emoji: string) => {
+    setContextMenuMessage(null);
+    if (msg.deletedForEveryone) return;
+
+    // Optimistic reaction update
+    const currentReactions = msg.reactions || [];
+    const existing = currentReactions.find((r) => r.userId === currentUser.id);
+
+    let updatedReactions: DirectMessageReaction[];
+    if (existing && existing.emoji === emoji) {
+      updatedReactions = currentReactions.filter((r) => r.userId !== currentUser.id);
+    } else {
+      updatedReactions = [
+        ...currentReactions.filter((r) => r.userId !== currentUser.id),
+        {
+          userId: currentUser.id,
+          userName: `${currentUser.prenom} ${currentUser.nom}`,
+          emoji
+        }
+      ];
+    }
+
+    setMessages((prev) => {
+      const updated = prev.map((m) => (m.id === msg.id ? { ...m, reactions: updatedReactions } : m));
+      if (activePartner) {
+        messagesCache.current[activePartner.id] = updated;
+      }
+      return updated;
+    });
+
+    try {
+      await api.chat.toggleReaction(msg.id, emoji);
+    } catch (err) {
+      console.error('Failed to react', err);
+    }
+  };
+
+  // Reply to message
+  const handleStartReply = (msg: DirectMessage) => {
+    setContextMenuMessage(null);
+    setEditingMessage(null);
+    setReplyingTo({
+      messageId: msg.id,
+      senderName: msg.senderName,
+      content: msg.content || (msg.attachment ? `[Pièce jointe : ${msg.attachment.name}]` : '')
+    });
+    textInputRef.current?.focus();
+  };
+
+  // Edit message
+  const handleStartEdit = (msg: DirectMessage) => {
+    setContextMenuMessage(null);
+    setReplyingTo(null);
+    setEditingMessage(msg);
+    setInputText(msg.content || '');
+    textInputRef.current?.focus();
+  };
+
+  // Delete message for me
+  const handleDeleteForMe = async (msg: DirectMessage) => {
+    setContextMenuMessage(null);
+    // Optimistic removal
+    setMessages((prev) => {
+      const updated = prev.filter((m) => m.id !== msg.id);
+      if (activePartner) {
+        messagesCache.current[activePartner.id] = updated;
+      }
+      return updated;
+    });
+
+    try {
+      await api.chat.deleteMessage(msg.id, 'for_me');
+    } catch (err: any) {
+      setChatError(err.message || 'Erreur lors de la suppression.');
+    }
+  };
+
+  // Delete message for everyone
+  const handleExecuteDeleteForEveryone = async (msg: DirectMessage) => {
+    setConfirmDeleteEveryone(null);
+    setContextMenuMessage(null);
+
+    // Optimistic update
+    setMessages((prev) => {
+      const updated = prev.map((m) =>
+        m.id === msg.id
+          ? { ...m, deletedForEveryone: true, content: 'Ce message a été supprimé', attachment: undefined }
+          : m
+      );
+      if (activePartner) {
+        messagesCache.current[activePartner.id] = updated;
+      }
+      return updated;
+    });
+
+    try {
+      await api.chat.deleteMessage(msg.id, 'for_everyone');
+    } catch (err: any) {
+      setChatError(err.message || 'Erreur lors de la suppression.');
     }
   };
 
@@ -252,7 +679,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
       audio.pause();
       setPlayingAudioId(null);
     } else {
-      // Pause any currently playing
       if (playingAudioId && audioRefs.current[playingAudioId]) {
         audioRefs.current[playingAudioId]?.pause();
       }
@@ -270,57 +696,56 @@ export const ChatView: React.FC<ChatViewProps> = ({
         setIsBlockedByMe(false);
         setIsBlocked(isBlockedByThem);
       } else {
-        if (confirm(`Voulez-vous vraiment bloquer ${activePartner.prenom} ${activePartner.nom} ?`)) {
-          await api.users.block(activePartner.id);
-          setIsBlockedByMe(true);
-          setIsBlocked(true);
-        }
+        await api.users.block(activePartner.id);
+        setIsBlockedByMe(true);
+        setIsBlocked(true);
       }
       setShowPartnerMenu(false);
       loadConversations();
     } catch (err: any) {
-      alert(err.message || 'Erreur lors du blocage.');
+      setChatError(err.message || 'Erreur lors du blocage.');
     }
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto py-4 px-2 sm:px-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col md:flex-row h-[750px] max-h-[85vh]">
+    <div className="h-full w-full max-w-7xl mx-auto flex flex-col p-1 sm:p-3 overflow-hidden">
+      {/* Main Chat Layout Container with Fixed Bounds */}
+      <div className="flex-1 min-h-0 bg-white dark:bg-slate-900 sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col md:flex-row">
         
-        {/* LEFT COLUMN: Conversations List & Search */}
+        {/* LEFT COLUMN: Conversations List & Search (Fixed Header & Scrollable List) */}
         <div
-          className={`w-full md:w-80 lg:w-96 flex flex-col border-r border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-950/40 ${
+          className={`w-full md:w-80 lg:w-96 flex flex-col h-full min-h-0 border-r border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-950/40 ${
             activePartner ? 'hidden md:flex' : 'flex'
           }`}
         >
-          {/* Header */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          {/* Fixed Left Header */}
+          <div className="shrink-0 p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
             <div className="flex items-center space-x-2">
               {onGoBack && (
                 <button
                   onClick={onGoBack}
-                  className="p-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 dark:bg-slate-800 dark:hover:bg-teal-950/50 text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 border border-slate-200 dark:border-slate-700 transition mr-1"
-                  title="Revenir à la page précédente"
+                  className="p-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/50 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition mr-0.5"
+                  title="Revenir au fil social"
                 >
-                  <ArrowLeft className="w-4 h-4 text-teal-500" />
+                  <ArrowLeft className="w-4 h-4 text-indigo-500" />
                 </button>
               )}
-              <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center space-x-2">
-                <span>Messages Privés</span>
-                <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+                <span>Conversations</span>
+                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
               </h2>
             </div>
             <button
               onClick={loadConversations}
-              className="p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 transition"
+              className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition"
               title="Rafraîchir"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
 
-          {/* User Search Input */}
-          <div className="p-3 border-b border-slate-200 dark:border-slate-800">
+          {/* Fixed Search Input */}
+          <div className="shrink-0 p-3 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -328,7 +753,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Démarrer une conversation..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-teal-500 shadow-2xs"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 shadow-2xs transition"
               />
               {searchQuery && (
                 <button
@@ -341,14 +766,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </div>
           </div>
 
-          {/* Search Results dropdown if searching */}
+          {/* Search Results Dropdown */}
           {searchQuery.trim().length > 0 && (
-            <div className="p-2 border-b border-slate-200 dark:border-slate-800 bg-teal-50/50 dark:bg-teal-950/20 max-h-48 overflow-y-auto">
-              <div className="text-[10px] font-bold text-teal-800 dark:text-teal-300 uppercase px-2 py-1">
+            <div className="shrink-0 p-2 border-b border-slate-200 dark:border-slate-800 bg-indigo-50/70 dark:bg-indigo-950/30 max-h-48 overflow-y-auto">
+              <div className="text-[10px] font-bold text-indigo-800 dark:text-indigo-300 uppercase px-2 py-1">
                 Résultats de recherche ({searchResults.length})
               </div>
               {isSearchingUsers ? (
-                <div className="py-3 text-center text-xs text-slate-400">Recherche...</div>
+                <div className="py-3 text-center text-xs text-slate-400">Recherche en direct...</div>
               ) : searchResults.length === 0 ? (
                 <div className="py-3 text-center text-xs text-slate-400">Aucun utilisateur trouvé</div>
               ) : (
@@ -364,7 +789,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <img
                       src={u.avatarUrl}
                       alt={u.prenom}
-                      className="w-7 h-7 rounded-full object-cover border border-teal-500 shrink-0"
+                      className="w-7 h-7 rounded-full object-cover border border-indigo-500 shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
@@ -378,18 +803,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </div>
           )}
 
-          {/* Conversations List */}
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {/* Scrollable Conversations List */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
             {loadingConversations ? (
               <div className="py-12 flex flex-col items-center justify-center text-slate-400">
-                <Loader2 className="w-6 h-6 animate-spin text-teal-500 mb-2" />
-                <span className="text-xs font-semibold">Chargement...</span>
+                <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
+                <span className="text-xs font-medium">Chargement des conversations...</span>
               </div>
             ) : conversations.length === 0 ? (
               <div className="py-12 px-4 text-center text-slate-400">
-                <p className="text-xs font-semibold mb-1">Aucune conversation</p>
+                <MessageSquare className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700 mb-2" />
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Aucune conversation</p>
                 <p className="text-[11px] text-slate-500">
-                  Recherchez un utilisateur ci-dessus pour envoyer votre premier message instantané.
+                  Recherchez un contact ci-dessus pour échanger instantanément.
                 </p>
               </div>
             ) : (
@@ -399,9 +825,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   <div
                     key={c.partner.id}
                     onClick={() => selectPartnerById(c.partner.id)}
-                    className={`flex items-center space-x-3 p-3 rounded-2xl cursor-pointer transition ${
+                    className={`flex items-center space-x-3 p-3 rounded-xl cursor-pointer transition select-none ${
                       isSelected
-                        ? 'bg-teal-600 text-white shadow-md shadow-teal-700/20'
+                        ? 'bg-indigo-600 text-white shadow-sm'
                         : 'hover:bg-white dark:hover:bg-slate-800/70 text-slate-900 dark:text-white'
                     }`}
                   >
@@ -409,10 +835,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       <img
                         src={c.partner.avatarUrl}
                         alt={c.partner.prenom}
-                        className="w-11 h-11 rounded-full object-cover border-2 border-teal-500/50"
+                        className="w-11 h-11 rounded-full object-cover border-2 border-indigo-500/40"
                       />
                       {c.unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm">
+                        <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-xs animate-pulse">
                           {c.unreadCount}
                         </span>
                       )}
@@ -420,10 +846,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between">
-                        <span className={`text-xs font-black truncate ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
+                        <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
                           {c.partner.prenom} {c.partner.nom}
                         </span>
-                        <span className={`text-[10px] ${isSelected ? 'text-teal-100' : 'text-slate-400'}`}>
+                        <span className={`text-[10px] ${isSelected ? 'text-indigo-100' : 'text-slate-400'}`}>
                           {new Date(c.lastMessage.createdAt).toLocaleTimeString('fr-FR', {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -431,7 +857,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         </span>
                       </div>
 
-                      <p className={`text-[11px] truncate mt-0.5 ${isSelected ? 'text-teal-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                      <p className={`text-[11px] truncate mt-0.5 ${isSelected ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
                         {c.lastMessage.content || (c.lastMessage.attachment ? `[Pièce jointe : ${c.lastMessage.attachment.type}]` : 'Nouveau message')}
                       </p>
                     </div>
@@ -442,38 +868,38 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Active Chat Conversation */}
+        {/* RIGHT COLUMN: Active Chat Conversation (Fixed Header + Scrollable Messages + Fixed Input) */}
         <div
-          className={`w-full flex-1 flex flex-col bg-white dark:bg-slate-900 ${
+          className={`w-full flex-1 flex flex-col h-full min-h-0 bg-white dark:bg-slate-900 relative ${
             !activePartner ? 'hidden md:flex' : 'flex'
           }`}
         >
           {activePartner ? (
             <>
-              {/* Chat Header */}
-              <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/40">
-                <div className="flex items-center space-x-3 min-w-0">
-                  {/* Back button to conversation list */}
+              {/* FIXED TOP CHAT HEADER */}
+              <div className="shrink-0 z-20 px-3 sm:px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xs">
+                <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+                  {/* Immediate Back Button to Return to Conversations List */}
                   <button
                     onClick={() => setActivePartner(null)}
-                    className="p-1.5 px-2 rounded-xl bg-slate-100 hover:bg-teal-50 dark:bg-slate-800 dark:hover:bg-teal-950/40 text-slate-700 dark:text-slate-300 hover:text-teal-600 border border-slate-200 dark:border-slate-700 flex items-center space-x-1 text-xs font-bold transition shrink-0"
+                    className="p-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 hover:text-indigo-600 border border-slate-200 dark:border-slate-700 flex items-center space-x-1.5 text-xs font-bold transition shrink-0"
                     title="Retour aux conversations"
                   >
-                    <ArrowLeft className="w-4 h-4 text-teal-500 shrink-0" />
-                    <span className="hidden sm:inline">Conversations</span>
+                    <ArrowLeft className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <span>Retour</span>
                   </button>
 
                   <img
                     src={activePartner.avatarUrl}
                     alt={activePartner.prenom}
                     onClick={() => onOpenUserProfile(activePartner.id)}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-teal-500 cursor-pointer hover:opacity-90 shrink-0"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500 cursor-pointer hover:opacity-90 shrink-0"
                   />
 
                   <div className="min-w-0">
                     <div
                       onClick={() => onOpenUserProfile(activePartner.id)}
-                      className="text-xs sm:text-sm font-black text-slate-900 dark:text-white cursor-pointer hover:text-teal-600 truncate flex items-center space-x-1.5"
+                      className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white cursor-pointer hover:text-indigo-600 truncate flex items-center space-x-1.5"
                     >
                       <span>
                         {activePartner.prenom} {activePartner.nom}
@@ -484,10 +910,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-teal-600 dark:text-teal-400 font-medium truncate flex items-center space-x-1">
+                    <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium truncate flex items-center space-x-1">
                       <span>{activePartner.promo || 'Étudiant'}</span>
                       <span>•</span>
-                      <span className="text-[10px] text-emerald-500 font-bold">Instantané</span>
+                      <span className="text-[10px] text-emerald-500 font-medium flex items-center space-x-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        <span>En ligne</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -504,26 +933,26 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
                   <button
                     onClick={() => setShowPartnerMenu(!showPartnerMenu)}
-                    className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+                    className="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition"
                   >
                     <MoreVertical className="w-4 h-4" />
                   </button>
 
                   {/* Dropdown Menu */}
                   {showPartnerMenu && (
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 z-30">
+                    <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 z-30">
                       <button
                         onClick={() => {
                           setShowPartnerMenu(false);
                           onOpenUserProfile(activePartner.id);
                         }}
-                        className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                        className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
                       >
-                        Voir le profil
+                        Voir le profil complet
                       </button>
                       <button
                         onClick={handleToggleBlock}
-                        className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-xl flex items-center space-x-1.5 ${
+                        className={`w-full text-left px-3 py-2 text-xs font-medium rounded-xl flex items-center space-x-1.5 transition ${
                           isBlockedByMe
                             ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                             : 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
@@ -548,7 +977,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
               {/* Blocked banner if applicable */}
               {isBlocked && (
-                <div className="bg-rose-50 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900 p-2.5 px-4 text-xs font-bold text-rose-700 dark:text-rose-300 flex items-center space-x-2">
+                <div className="shrink-0 bg-rose-50 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900 p-2.5 px-4 text-xs font-bold text-rose-700 dark:text-rose-300 flex items-center space-x-2">
                   <ShieldAlert className="w-4 h-4 shrink-0" />
                   <span>
                     {isBlockedByMe
@@ -559,38 +988,47 @@ export const ChatView: React.FC<ChatViewProps> = ({
               )}
 
               {chatError && (
-                <div className="bg-rose-50 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900 p-2.5 px-4 text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center space-x-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{chatError}</span>
+                <div className="shrink-0 bg-rose-50 dark:bg-rose-950/40 border-b border-rose-200 dark:border-rose-900 p-2.5 px-4 text-xs font-medium text-rose-700 dark:text-rose-300 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{chatError}</span>
+                  </div>
+                  <button onClick={() => setChatError(null)} className="p-1">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
 
-              {/* Message Stream */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30 dark:bg-slate-950/20">
-                {loadingMessages ? (
+              {/* SCROLLABLE MESSAGE STREAM (Fixed bounds, smooth scroll) */}
+              <div
+                ref={messageStreamRef}
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 sm:p-4 space-y-3 bg-slate-50/40 dark:bg-slate-950/30"
+              >
+                {loadingMessages && messages.length === 0 ? (
                   <div className="py-20 flex flex-col items-center justify-center text-slate-400">
-                    <Loader2 className="w-6 h-6 animate-spin text-teal-500 mb-2" />
-                    <span className="text-xs font-semibold">Chargement des messages...</span>
+                    <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
+                    <span className="text-xs font-medium">Chargement des messages...</span>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="py-20 text-center text-slate-400">
-                    <div className="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-950/50 text-teal-500 flex items-center justify-center mx-auto mb-2 border border-teal-200 dark:border-teal-800">
+                  <div className="py-16 text-center text-slate-400">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-500 flex items-center justify-center mx-auto mb-2 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
                       <Send className="w-5 h-5" />
                     </div>
                     <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                       Début de la conversation
                     </p>
-                    <p className="text-[11px] text-slate-500">
-                      Envoyez un message texte, une photo, une note vocale ou un document.
+                    <p className="text-[11px] text-slate-500 max-w-xs mx-auto">
+                      Double-cliquez pour aimer ❤️, ou maintenez enfoncé pour réagir, répondre ou transférer.
                     </p>
                   </div>
                 ) : (
                   messages.map((msg) => {
                     const isMe = msg.senderId === currentUser.id;
+
                     return (
                       <div
                         key={msg.id}
-                        className={`flex items-end space-x-2 ${
+                        className={`flex items-end space-x-2 group relative ${
                           isMe ? 'justify-end' : 'justify-start'
                         }`}
                       >
@@ -603,36 +1041,103 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           />
                         )}
 
+                        {/* Options button on left if sender is Me */}
+                        {isMe && (
+                          <button
+                            onClick={() => setContextMenuMessage(msg)}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition shrink-0 self-center"
+                            title="Options du message"
+                          >
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {/* Message Bubble with Fast Double-Click & Long-Click handlers */}
                         <div
-                          className={`max-w-[78%] sm:max-w-md rounded-2xl p-3 shadow-xs ${
-                            isMe
-                              ? 'bg-teal-600 text-white rounded-br-xs'
+                          onDoubleClick={() => handleToggleLike(msg)}
+                          onMouseDown={() => handleMouseDown(msg)}
+                          onMouseUp={handleMouseUp}
+                          onTouchStart={() => handleTouchStart(msg)}
+                          onTouchEnd={() => handleTouchEnd(msg)}
+                          onTouchMove={handleTouchMove}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setContextMenuMessage(msg);
+                          }}
+                          className={`relative max-w-[84%] sm:max-w-md rounded-2xl p-3 shadow-2xs select-text transition-all cursor-pointer ${
+                            msg.deletedForEveryone
+                              ? 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 italic border border-slate-200 dark:border-slate-800'
+                              : isMe
+                              ? 'bg-indigo-600 text-white rounded-br-xs'
                               : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 rounded-bl-xs'
                           }`}
                         >
+                          {/* Heart Burst Animation on Double Click */}
+                          {heartBurstId === msg.id && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 animate-ping">
+                              <Heart className="w-12 h-12 fill-rose-500 text-rose-500 drop-shadow-lg" />
+                            </div>
+                          )}
+
+                          {/* Forwarded Header indicator */}
+                          {msg.isForwarded && (
+                            <div className={`flex items-center space-x-1 text-[10px] font-bold mb-1.5 opacity-80 ${
+                              isMe ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'
+                            }`}>
+                              <Forward className="w-3 h-3" />
+                              <span>Message transféré</span>
+                            </div>
+                          )}
+
+                          {/* Quoted Reply if present */}
+                          {msg.replyTo && (
+                            <div
+                              className={`p-2 rounded-xl mb-2 text-xs border-l-2 ${
+                                isMe
+                                  ? 'bg-indigo-700/60 border-indigo-300 text-indigo-50'
+                                  : 'bg-slate-100 dark:bg-slate-700/60 border-indigo-500 text-slate-700 dark:text-slate-200'
+                              }`}
+                            >
+                              <div className="font-bold text-[10px] opacity-90 flex items-center space-x-1 mb-0.5">
+                                <CornerDownRight className="w-3 h-3" />
+                                <span>{msg.replyTo.senderName}</span>
+                              </div>
+                              <p className="line-clamp-2 italic text-[11px]">
+                                {msg.replyTo.content}
+                              </p>
+                            </div>
+                          )}
+
                           {/* Attached Image */}
-                          {msg.attachment && msg.attachment.type === 'image' && (
+                          {msg.attachment && msg.attachment.type === 'image' && !msg.deletedForEveryone && (
                             <div className="mb-2 rounded-xl overflow-hidden border border-black/10">
                               <img
                                 src={msg.attachment.url}
                                 alt={msg.attachment.name}
-                                className="max-h-60 w-full object-cover cursor-pointer hover:scale-102 transition"
-                                onClick={() => window.open(msg.attachment?.url, '_blank')}
+                                className="max-h-64 w-full object-cover cursor-pointer hover:opacity-95 transition"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(msg.attachment?.url, '_blank');
+                                }}
                               />
                             </div>
                           )}
 
                           {/* Attached Audio Voice Note */}
-                          {msg.attachment && msg.attachment.type === 'audio' && (
+                          {msg.attachment && msg.attachment.type === 'audio' && !msg.deletedForEveryone && (
                             <div
                               className={`p-2 rounded-xl mb-2 flex items-center space-x-2.5 ${
-                                isMe ? 'bg-teal-700/60' : 'bg-slate-100 dark:bg-slate-700/60'
+                                isMe ? 'bg-indigo-700/60' : 'bg-slate-100 dark:bg-slate-700/60'
                               }`}
                             >
                               <button
-                                onClick={() => togglePlayAudio(msg.id, msg.attachment!.url)}
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 ${
-                                  isMe ? 'bg-teal-500 hover:bg-teal-400' : 'bg-teal-600 hover:bg-teal-500'
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePlayAudio(msg.id, msg.attachment!.url);
+                                }}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 shadow-xs ${
+                                  isMe ? 'bg-indigo-500 hover:bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-500'
                                 }`}
                               >
                                 {playingAudioId === msg.id ? (
@@ -654,13 +1159,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           )}
 
                           {/* Attached Document */}
-                          {msg.attachment && msg.attachment.type === 'document' && (
+                          {msg.attachment && msg.attachment.type === 'document' && !msg.deletedForEveryone && (
                             <div
                               className={`p-2.5 rounded-xl mb-2 flex items-center space-x-2.5 ${
-                                isMe ? 'bg-teal-700/60' : 'bg-slate-100 dark:bg-slate-700/60'
+                                isMe ? 'bg-indigo-700/60' : 'bg-slate-100 dark:bg-slate-700/60'
                               }`}
                             >
-                              <FileText className="w-6 h-6 text-teal-300 shrink-0" />
+                              <FileText className="w-6 h-6 text-indigo-300 shrink-0" />
                               <div className="min-w-0 flex-1">
                                 <div className="text-xs font-bold truncate">
                                   {msg.attachment.name}
@@ -676,7 +1181,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                                 download={msg.attachment.name}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="p-1.5 rounded-lg bg-black/20 hover:bg-black/40 text-white shrink-0"
+                                onClick={(e) => e.stopPropagation()}
+                                className="p-1.5 rounded-lg bg-black/20 hover:bg-black/40 text-white shrink-0 transition"
                                 title="Télécharger"
                               >
                                 <Download className="w-3.5 h-3.5" />
@@ -691,12 +1197,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             </p>
                           )}
 
-                          {/* Message Footer: Timestamp + Read ticks */}
+                          {/* Message Footer: Timestamp + Read status */}
                           <div
-                            className={`flex items-center justify-end space-x-1 text-[10px] mt-1 ${
-                              isMe ? 'text-teal-200' : 'text-slate-400'
+                            className={`flex items-center justify-end space-x-1 text-[10px] mt-1 select-none ${
+                              isMe ? 'text-indigo-200' : 'text-slate-400'
                             }`}
                           >
+                            {msg.isEdited && (
+                              <span className="italic opacity-80 mr-0.5">(modifié)</span>
+                            )}
                             <span>
                               {new Date(msg.createdAt).toLocaleTimeString('fr-FR', {
                                 hour: '2-digit',
@@ -705,15 +1214,59 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             </span>
                             {isMe && (
                               <span>
-                                {msg.isRead ? (
-                                  <CheckCheck className="w-3.5 h-3.5 text-teal-200 inline" />
+                                {msg.isSending ? (
+                                  <Loader2 className="w-3 h-3 animate-spin text-indigo-200 inline" />
+                                ) : msg.isRead ? (
+                                  <CheckCheck className="w-3.5 h-3.5 text-indigo-200 inline" />
                                 ) : (
                                   <Check className="w-3.5 h-3.5 opacity-70 inline" />
                                 )}
                               </span>
                             )}
                           </div>
+
+                          {/* Reaction Pills below Bubble */}
+                          {msg.reactions && msg.reactions.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5 pt-1 border-t border-black/10 dark:border-white/10">
+                              {Array.from(new Set(msg.reactions.map((r) => r.emoji))).map((emoji: string) => {
+                                const count = msg.reactions?.filter((r) => r.emoji === emoji).length || 0;
+                                const isMyReact = msg.reactions?.some(
+                                  (r) => r.userId === currentUser.id && r.emoji === emoji
+                                );
+
+                                return (
+                                  <button
+                                    key={emoji}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSelectEmoji(msg, emoji);
+                                    }}
+                                    className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-bold transition shadow-2xs ${
+                                      isMyReact
+                                        ? 'bg-rose-500/20 text-rose-500 border border-rose-500/40'
+                                        : 'bg-black/10 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+                                    }`}
+                                  >
+                                    <span>{emoji}</span>
+                                    {count > 1 && <span className="text-[10px]">{count}</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
+
+                        {/* Options button on right if sender is Partner */}
+                        {!isMe && (
+                          <button
+                            onClick={() => setContextMenuMessage(msg)}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition shrink-0 self-center"
+                            title="Options du message"
+                          >
+                            <MoreVertical className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     );
                   })
@@ -721,10 +1274,195 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* CONTEXT MENU / BOTTOM ACTION SHEET (Triggered on Long Press or Double-Click / Right-Click) */}
+              {contextMenuMessage && (
+                <div 
+                  className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-slate-950/60 backdrop-blur-xs"
+                  onClick={() => setContextMenuMessage(null)}
+                >
+                  <div
+                    className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-2xl space-y-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Header with dismiss */}
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                        Actions sur le message
+                      </span>
+                      <button
+                        onClick={() => setContextMenuMessage(null)}
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Quick Emojis Bar */}
+                    <div className="flex items-center justify-around bg-slate-100 dark:bg-slate-800/70 p-2 rounded-2xl">
+                      {EMOJI_LIST.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => handleSelectEmoji(contextMenuMessage, emoji)}
+                          className="text-xl hover:scale-125 active:scale-95 transition-transform p-1"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Action Buttons List */}
+                    <div className="space-y-1 text-xs font-semibold">
+                      {/* Reply button */}
+                      <button
+                        onClick={() => handleStartReply(contextMenuMessage)}
+                        className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition"
+                      >
+                        <Reply className="w-4 h-4 text-indigo-500" />
+                        <span>Répondre à ce message</span>
+                      </button>
+
+                      {/* Forward button */}
+                      <button
+                        onClick={() => {
+                          setForwardingMessage(contextMenuMessage);
+                          setContextMenuMessage(null);
+                        }}
+                        className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition"
+                      >
+                        <Forward className="w-4 h-4 text-blue-500" />
+                        <span>Transférer le message</span>
+                      </button>
+
+                      {/* Edit button (Only if sender is currentUser and not deleted) */}
+                      {contextMenuMessage.senderId === currentUser.id &&
+                        !contextMenuMessage.deletedForEveryone && (
+                          <button
+                            onClick={() => handleStartEdit(contextMenuMessage)}
+                            className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition"
+                          >
+                            <Edit2 className="w-4 h-4 text-amber-500" />
+                            <span>Modifier le message</span>
+                          </button>
+                        )}
+
+                      {/* Delete for me */}
+                      <button
+                        onClick={() => handleDeleteForMe(contextMenuMessage)}
+                        className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition"
+                      >
+                        <Trash2 className="w-4 h-4 text-slate-400" />
+                        <span>Supprimer pour moi</span>
+                      </button>
+
+                      {/* Delete for everyone (Author only) */}
+                      {contextMenuMessage.senderId === currentUser.id &&
+                        !contextMenuMessage.deletedForEveryone && (
+                          <button
+                            onClick={() => {
+                              setConfirmDeleteEveryone(contextMenuMessage);
+                              setContextMenuMessage(null);
+                            }}
+                            className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 transition"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-500" />
+                            <span>Supprimer pour tout le monde</span>
+                          </button>
+                        )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CONFIRM IN-APP MODAL FOR DELETE FOR EVERYONE (Replaces window.confirm) */}
+              {confirmDeleteEveryone && (
+                <div 
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs"
+                  onClick={() => setConfirmDeleteEveryone(null)}
+                >
+                  <div
+                    className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl space-y-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-500/20 shrink-0">
+                        <Trash2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                          Supprimer pour tout le monde ?
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Ce message sera effacé pour tous les participants.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-2 pt-1">
+                      <button
+                        onClick={() => setConfirmDeleteEveryone(null)}
+                        className="px-3.5 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        onClick={() => handleExecuteDeleteForEveryone(confirmDeleteEveryone)}
+                        className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition shadow-xs"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* REPLYING PREVIEW BANNER */}
+              {replyingTo && (
+                <div className="shrink-0 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/60 border-t border-indigo-200 dark:border-indigo-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-xs truncate">
+                    <Reply className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <div className="truncate">
+                      <span className="font-bold text-indigo-800 dark:text-indigo-200">
+                        Réponse à {replyingTo.senderName} :
+                      </span>{' '}
+                      <span className="text-slate-600 dark:text-slate-300 italic truncate">
+                        « {replyingTo.content} »
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setReplyingTo(null)}
+                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* EDITING PREVIEW BANNER */}
+              {editingMessage && (
+                <div className="shrink-0 px-4 py-2 bg-amber-50 dark:bg-amber-950/60 border-t border-amber-200 dark:border-amber-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-xs">
+                    <Edit2 className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span className="font-bold text-amber-900 dark:text-amber-200">
+                      Modification du message en cours
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditingMessage(null);
+                      setInputText('');
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
               {/* Pending Attachment Preview Banner */}
               {pendingAttachment && (
-                <div className="p-2.5 px-4 bg-teal-50 dark:bg-teal-950/50 border-t border-teal-200 dark:border-teal-800 flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-xs font-bold text-teal-800 dark:text-teal-300 truncate">
+                <div className="shrink-0 p-2.5 px-4 bg-indigo-50 dark:bg-indigo-950/50 border-t border-indigo-200 dark:border-indigo-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-indigo-800 dark:text-indigo-300 truncate">
                     {pendingAttachment.type === 'image' && <ImageIcon className="w-4 h-4" />}
                     {pendingAttachment.type === 'audio' && <Mic className="w-4 h-4" />}
                     {pendingAttachment.type === 'document' && <Paperclip className="w-4 h-4" />}
@@ -732,16 +1470,16 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   </div>
                   <button
                     onClick={() => setPendingAttachment(null)}
-                    className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                    className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white transition"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               )}
 
-              {/* Voice Recorder Drawer / Modal if toggled */}
+              {/* Voice Recorder Drawer */}
               {showVoiceRecorder && (
-                <div className="p-3 bg-slate-100 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700">
+                <div className="shrink-0 p-3 bg-slate-100 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700">
                   <AudioRecorder
                     onAudioReady={(att) => {
                       setPendingAttachment({
@@ -757,10 +1495,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 </div>
               )}
 
-              {/* Chat Input Bar */}
+              {/* FIXED BOTTOM CHAT INPUT BAR */}
               <form
                 onSubmit={handleSendMessage}
-                className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 flex items-center space-x-2 bg-white dark:bg-slate-900"
+                className="shrink-0 p-2.5 sm:p-3 border-t border-slate-200 dark:border-slate-800 flex items-center space-x-2 bg-white dark:bg-slate-900 shadow-xs"
               >
                 {/* Hidden file inputs */}
                 <input
@@ -779,12 +1517,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 />
 
                 {/* Attachment buttons */}
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-0.5 sm:space-x-1 shrink-0">
                   <button
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
                     disabled={isBlocked || sending}
-                    className="p-2 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
                     title="Envoyer une photo"
                   >
                     <ImageIcon className="w-5 h-5" />
@@ -794,7 +1532,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     type="button"
                     onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
                     disabled={isBlocked || sending}
-                    className="p-2 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
                     title="Enregistrer un message vocal"
                   >
                     <Mic className="w-5 h-5" />
@@ -804,7 +1542,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     type="button"
                     onClick={() => docInputRef.current?.click()}
                     disabled={isBlocked || sending}
-                    className="p-2 text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
                     title="Envoyer un document"
                   >
                     <Paperclip className="w-5 h-5" />
@@ -813,16 +1551,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
                 {/* Text input */}
                 <input
+                  ref={textInputRef}
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder={
                     isBlocked
                       ? 'Communication bloquée'
+                      : editingMessage
+                      ? 'Modifier votre message...'
+                      : replyingTo
+                      ? 'Votre réponse...'
                       : 'Écrire un message instantané...'
                   }
                   disabled={isBlocked || sending}
-                  className="flex-1 py-2.5 px-3.5 rounded-xl text-xs sm:text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-teal-500 disabled:opacity-50"
+                  className="flex-1 py-2.5 px-3.5 rounded-xl text-xs sm:text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50 transition shadow-2xs"
                 />
 
                 {/* Send button */}
@@ -833,10 +1576,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     sending ||
                     (!inputText.trim() && !pendingAttachment)
                   }
-                  className="p-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white font-bold transition flex items-center justify-center shadow-sm"
+                  className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold transition flex items-center justify-center shadow-xs shrink-0"
+                  title={editingMessage ? 'Sauvegarder' : 'Envoyer'}
                 >
                   {sending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : editingMessage ? (
+                    <Check className="w-4 h-4" />
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
@@ -845,19 +1591,30 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-              <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 flex items-center justify-center mb-3 border border-teal-200 dark:border-teal-800">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center mb-3 border border-indigo-200 dark:border-indigo-800 shadow-xs">
                 <Send className="w-8 h-8" />
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
                 Sélectionnez une conversation
               </h3>
               <p className="text-xs text-slate-500 max-w-sm">
-                Échangez en direct des messages, photos, mémos vocaux et documents en temps réel.
+                Échangez des messages instantanés, photos, mémos vocaux et documents en temps réel.
               </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Forward Modal */}
+      <ForwardMessageModal
+        isOpen={forwardingMessage !== null}
+        message={forwardingMessage}
+        currentUser={currentUser}
+        onClose={() => setForwardingMessage(null)}
+        onSuccess={() => {
+          loadConversations();
+        }}
+      />
     </div>
   );
 };

@@ -166,10 +166,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
         <div className="mb-4">
           <button
             onClick={onGoBack}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold text-xs shadow-2xs transition group"
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#0c142b] border border-blue-100 dark:border-blue-900 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-xs shadow-2xs transition group cursor-pointer"
             title="Revenir à la page précédente"
           >
-            <ArrowLeft className="w-4 h-4 text-indigo-500 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-4 h-4 text-blue-500 group-hover:-translate-x-0.5 transition-transform" />
             <span>Revenir à la page précédente</span>
           </button>
         </div>
@@ -194,17 +194,17 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
       )}
 
       {/* Admin Top Banner */}
-      <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl text-white shadow-sm mb-6">
+      <div className="bg-gradient-to-r from-[#0a163a] via-[#0d2358] to-[#0a163a] border border-blue-900 p-6 sm:p-8 rounded-3xl text-white shadow-sm mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-950/80 border border-indigo-500/40 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
-              <ShieldCheck className="w-4 h-4 text-indigo-400" />
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-400/40 text-blue-300 text-xs font-bold uppercase tracking-wider mb-2">
+              <ShieldCheck className="w-4 h-4 text-blue-400" />
               <span>Panneau d'Administration</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
               Gestion des Membres & Modération
             </h2>
-            <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+            <p className="text-blue-200/80 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
               Supervisez les comptes de la communauté, appliquez des sanctions temporaires ou définitives, ou limitez les interactions en mode lecture seule.
             </p>
           </div>
@@ -212,7 +212,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
           <button
             onClick={loadUsers}
             disabled={loading}
-            className="self-start md:self-auto flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold border border-slate-700 transition"
+            className="self-start md:self-auto flex items-center space-x-2 px-4 py-2 bg-blue-900/60 hover:bg-blue-800/80 text-white rounded-xl text-xs font-bold border border-blue-700/60 transition cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Actualiser</span>
@@ -220,20 +220,20 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-slate-800">
-          <div className="p-3 bg-slate-800/40 rounded-2xl border border-slate-750">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Inscrits</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-6 border-t border-blue-900/60">
+          <div className="p-3 bg-blue-950/40 rounded-2xl border border-blue-800/40">
+            <span className="text-[11px] font-bold text-blue-300 uppercase tracking-wider block">Total Inscrits</span>
             <span className="text-2xl font-black text-white">{totalUsers}</span>
           </div>
-          <div className="p-3 bg-slate-800/40 rounded-2xl border border-slate-750">
+          <div className="p-3 bg-blue-950/40 rounded-2xl border border-blue-800/40">
             <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">Comptes Actifs</span>
             <span className="text-2xl font-black text-emerald-400">{activeCount}</span>
           </div>
-          <div className="p-3 bg-slate-800/40 rounded-2xl border border-slate-750">
+          <div className="p-3 bg-blue-950/40 rounded-2xl border border-blue-800/40">
             <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">Lecture Seule</span>
             <span className="text-2xl font-black text-amber-400">{restrictedCount}</span>
           </div>
-          <div className="p-3 bg-slate-800/40 rounded-2xl border border-slate-750">
+          <div className="p-3 bg-blue-950/40 rounded-2xl border border-blue-800/40">
             <span className="text-[11px] font-bold text-rose-400 uppercase tracking-wider block">Bannis / Suspendus</span>
             <span className="text-2xl font-black text-rose-400">{bannedCount}</span>
           </div>
@@ -241,18 +241,18 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
       </div>
 
       {/* Filters & Search Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-white dark:bg-[#0c142b] p-4 rounded-3xl border border-blue-100 dark:border-blue-900 shadow-2xs">
         
         {/* Search Input with Search Button */}
         <div className="flex items-center space-x-2 w-full sm:w-auto flex-1 max-w-md">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Rechercher par nom, prénom, email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-indigo-500"
+              className="w-full pl-9 pr-3 py-2 bg-blue-50/40 dark:bg-[#070d20] border border-blue-100 dark:border-blue-900 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500"
             />
           </div>
         </div>
@@ -261,10 +261,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
         <div className="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               statusFilter === 'all'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-blue-50/50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-blue-100'
             }`}
           >
             Tous ({totalUsers})
@@ -272,7 +272,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
 
           <button
             onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               statusFilter === 'active'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
@@ -283,7 +283,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
 
           <button
             onClick={() => setStatusFilter('restricted')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               statusFilter === 'restricted'
                 ? 'bg-amber-600 text-white shadow-xs'
                 : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
@@ -294,7 +294,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
 
           <button
             onClick={() => setStatusFilter('banned')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
               statusFilter === 'banned'
                 ? 'bg-rose-600 text-white shadow-xs'
                 : 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 hover:bg-rose-100'
@@ -309,11 +309,11 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
       {/* Users List */}
       {loading ? (
         <div className="text-center py-20 text-slate-400 text-xs flex flex-col items-center">
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500 mb-2" />
           <span>Chargement des utilisateurs...</span>
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center">
+        <div className="bg-white dark:bg-[#0c142b] rounded-3xl border border-blue-100 dark:border-blue-900 p-12 text-center">
           <UserX className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-800 dark:text-white">Aucun utilisateur trouvé</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -345,12 +345,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
             return (
               <div
                 key={user.id}
-                className={`bg-white dark:bg-slate-900 rounded-2xl border p-4 sm:p-5 transition-all shadow-2xs ${
+                className={`bg-white dark:bg-[#0c142b] rounded-2xl border p-4 sm:p-5 transition-all shadow-xs ${
                   isBanned
                     ? 'border-rose-300 dark:border-rose-900/60 bg-rose-50/30 dark:bg-rose-950/10'
                     : isRestricted
                     ? 'border-amber-300 dark:border-amber-900/60 bg-amber-50/20 dark:bg-amber-950/10'
-                    : 'border-slate-200/80 dark:border-slate-800'
+                    : 'border-blue-100 dark:border-blue-900/70'
                 }`}
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -360,7 +360,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
                     <img
                       src={user.avatarUrl}
                       alt={user.nom}
-                      className="w-12 h-12 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700 shrink-0"
+                      className="w-12 h-12 rounded-full object-cover border-2 border-blue-100 dark:border-blue-800 shrink-0"
                       referrerPolicy="no-referrer"
                     />
 
@@ -371,12 +371,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
                         </span>
 
                         {isAdmin && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                             Administrateur
                           </span>
                         )}
 
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-blue-100 dark:border-slate-700">
                           {user.promo || 'Membre'}
                         </span>
                       </div>
@@ -413,16 +413,16 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
 
                   {/* Actions for this user */}
                   {!isAdmin && !isSelf && (
-                    <div className="flex items-center flex-wrap gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center flex-wrap gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-blue-50 dark:border-blue-950">
                       
                       {/* Limitation Toggle */}
                       <button
                         onClick={() => handleToggleRestriction(user)}
                         disabled={actionLoadingId === user.id}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer ${
                           isRestricted
                             ? 'bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/50 dark:hover:bg-amber-900 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700'
-                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                            : 'bg-blue-50/50 hover:bg-blue-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-blue-100 dark:border-slate-700'
                         }`}
                         title="Quand activé, l'utilisateur peut uniquement voir les publications."
                       >
@@ -444,7 +444,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
                         <button
                           onClick={() => handleUnban(user.id)}
                           disabled={actionLoadingId === user.id}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5 cursor-pointer"
                         >
                           <UserCheck className="w-3.5 h-3.5" />
                           <span>Débannir</span>
@@ -457,7 +457,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
                             setBanReason('');
                           }}
                           disabled={actionLoadingId === user.id}
-                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5"
+                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1.5 cursor-pointer"
                         >
                           <UserX className="w-3.5 h-3.5" />
                           <span>Bannir</span>
@@ -468,7 +468,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
                       <button
                         onClick={() => setUserToDelete(user)}
                         disabled={actionLoadingId === user.id}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition"
+                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition cursor-pointer"
                         title="Supprimer définitivement ce compte"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -478,7 +478,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
                   )}
 
                   {isAdmin && (
-                    <div className="text-xs font-bold text-slate-400 italic">
+                    <div className="text-xs font-bold text-blue-400/80 italic">
                       Compte Administrateur Protégé
                     </div>
                   )}

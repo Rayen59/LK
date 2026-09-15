@@ -91,20 +91,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-start sm:justify-center items-center p-3 sm:p-6 py-6 sm:py-10 overflow-y-auto w-full">
+    <div className="min-h-screen bg-slate-950/95 flex flex-col justify-start sm:justify-center items-center p-3 sm:p-6 py-6 sm:py-10 overflow-y-auto w-full">
       {/* Container Box */}
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-blue-900/40">
         
         {/* Header Banner with MK Branding */}
-        <div className="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 px-8 py-8 text-white border-b border-indigo-900/50">
+        <div className="relative bg-gradient-to-r from-[#0a163a] via-[#0d2358] to-[#0a163a] px-8 py-8 text-white border-b border-blue-800/40">
           <div className="flex items-center space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-500 to-indigo-600 flex items-center justify-center text-white shadow-lg">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
               <span className="text-xl font-black tracking-tighter">MK</span>
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-xs font-bold uppercase tracking-widest text-teal-400 bg-teal-950/80 px-2.5 py-0.5 rounded-full border border-teal-800">
-                  Réseau Social
+                <span className="text-xs font-bold uppercase tracking-widest text-blue-300 bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-700/60">
+                  Réseau Social Professionnel
                 </span>
               </div>
               <h1 className="text-2xl font-extrabold tracking-tight text-white mt-1">
@@ -112,20 +112,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               </h1>
             </div>
           </div>
-          <p className="text-slate-300 text-sm mt-3 leading-relaxed">
-            Rejoignez MK pour partager des publications, des reels vidéo, échanger en direct avec vos amis et participer aux discussions communautaires.
+          <p className="text-blue-200/80 text-sm mt-3 leading-relaxed">
+            Rejoignez MK pour partager des publications, des reels vidéo, échanger en direct avec vos amis et participer aux quiz et discussions communautaires.
           </p>
 
           {/* Tab Switcher */}
-          <div className="flex bg-slate-900/80 p-1.5 rounded-xl border border-slate-800 mt-6 max-w-md">
+          <div className="flex bg-[#070d20] p-1.5 rounded-2xl border border-blue-900/60 mt-6 max-w-md">
             <button
               id="tab-login-btn"
               type="button"
               onClick={() => { setIsLogin(true); setError(null); }}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all cursor-pointer ${
                 isLogin
-                  ? 'bg-teal-600 text-white shadow-md'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-300 hover:text-white hover:bg-blue-950/60'
               }`}
             >
               Connexion
@@ -134,10 +134,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               id="tab-register-btn"
               type="button"
               onClick={() => { setIsLogin(false); setError(null); }}
-              className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2.5 text-sm font-bold rounded-xl transition-all cursor-pointer ${
                 !isLogin
-                  ? 'bg-teal-600 text-white shadow-md'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-300 hover:text-white hover:bg-blue-950/60'
               }`}
             >
               Créer un compte
@@ -163,7 +163,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                     Prénom <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <UserIcon className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <UserIcon className="w-5 h-5 text-blue-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       id="input-prenom"
                       type="text"
@@ -171,7 +171,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                       placeholder="Votre prénom"
                       value={prenom}
                       onChange={(e) => setPrenom(e.target.value)}
-                      className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent transition-all"
+                      className="w-full pl-11 pr-4 py-2.5 bg-blue-50/30 border border-blue-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
                     />
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                     Nom <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <UserIcon className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <UserIcon className="w-5 h-5 text-blue-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       id="input-nom"
                       type="text"
@@ -188,7 +188,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                       placeholder="Votre nom"
                       value={nom}
                       onChange={(e) => setNom(e.target.value)}
-                      className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent transition-all"
+                      className="w-full pl-11 pr-4 py-2.5 bg-blue-50/30 border border-blue-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
                     />
                   </div>
                 </div>
@@ -204,10 +204,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                     <img
                       src={customAvatarPreview || avatarUrl}
                       alt="Avatar"
-                      className="w-16 h-16 rounded-full object-cover border-2 border-teal-500 shadow-sm"
+                      className="w-16 h-16 rounded-2xl object-cover border-2 border-blue-500 shadow-sm"
                       referrerPolicy="no-referrer"
                     />
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition">
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 cursor-pointer transition">
                       <Camera className="w-5 h-5 text-white" />
                       <input
                         id="input-avatar-file"
@@ -231,10 +231,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                             setAvatarUrl(url);
                             setCustomAvatarPreview(null);
                           }}
-                          className={`w-8 h-8 rounded-full overflow-hidden border-2 transition ${
+                          className={`w-9 h-9 rounded-xl overflow-hidden border-2 transition cursor-pointer ${
                             avatarUrl === url && !customAvatarPreview
-                              ? 'border-teal-600 ring-2 ring-teal-200'
-                              : 'border-slate-200 hover:border-slate-400'
+                              ? 'border-blue-600 ring-2 ring-blue-300'
+                              : 'border-slate-200 hover:border-blue-300'
                           }`}
                         >
                           <img src={url} alt={`Preset ${idx}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -251,12 +251,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                   Catégorie de profil <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Sparkles className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Sparkles className="w-5 h-5 text-blue-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <select
                     id="select-promo"
                     value={promo}
                     onChange={(e) => setPromo(e.target.value)}
-                    className="w-full pl-11 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent transition-all"
+                    className="w-full pl-11 pr-8 py-2.5 bg-blue-50/30 border border-blue-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
                   >
                     {GENERAL_PROFILES.map((p) => (
                       <option key={p.value} value={p.value}>
@@ -276,13 +276,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                 Adresse Email <span className="text-red-500">*</span>
               </label>
               {!isLogin && (
-                <span className="text-[11px] text-teal-700 bg-teal-50 px-2 py-0.5 rounded font-medium">
+                <span className="text-[11px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded font-bold border border-blue-100">
                   Usage unique garanti
                 </span>
               )}
             </div>
             <div className="relative">
-              <Mail className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Mail className="w-5 h-5 text-blue-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 id="input-email"
                 type="email"
@@ -290,7 +290,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                 placeholder="nom@exemple.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent transition-all"
+                className="w-full pl-11 pr-4 py-2.5 bg-blue-50/30 border border-blue-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
               />
             </div>
           </div>
@@ -301,7 +301,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               Mot de passe <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <Lock className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Lock className="w-5 h-5 text-blue-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 id="input-password"
                 type="password"
@@ -309,7 +309,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent transition-all"
+                className="w-full pl-11 pr-4 py-2.5 bg-blue-50/30 border border-blue-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
               />
             </div>
           </div>
@@ -325,7 +325,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                 placeholder="Présentez-vous en quelques mots, vos passions, vos projets..."
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 focus:border-transparent transition-all resize-none"
+                className="w-full px-3.5 py-2 bg-blue-50/30 border border-blue-200 rounded-xl text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all resize-none"
               />
             </div>
           )}
@@ -335,7 +335,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
             id="auth-submit-btn"
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-6 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-lg shadow-teal-600/25 flex items-center justify-center space-x-2 transition-all transform active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+            className="w-full py-3.5 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-black rounded-xl shadow-lg shadow-blue-600/30 flex items-center justify-center space-x-2 transition-all transform active:scale-[0.99] disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <span className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
@@ -348,9 +348,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
           </button>
 
           {/* Footer Assurance */}
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-center space-x-2 text-xs text-slate-500">
-            <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-            <span>MK — Réseau social connecté, sécurisé et modéré par IA</span>
+          <div className="pt-2 border-t border-blue-50 flex items-center justify-center space-x-2 text-xs text-slate-500">
+            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+            <span>MK — Réseau social moderne, rapide et sécurisé</span>
           </div>
         </form>
       </div>

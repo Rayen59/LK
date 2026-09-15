@@ -111,6 +111,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastTapRef = useRef<{ [msgId: string]: number }>({});
   const isLongPressedRef = useRef<boolean>(false);
+  const lastTouchLikeRef = useRef<number>(0);
 
   // Notify parent of active conversation state for responsive mobile navigation
   useEffect(() => {
@@ -428,26 +429,22 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   };
 
-  // Double Click / Double Tap to LIKE (❤️)
-  const handleToggleLike = async (msg: DirectMessage) => {
+  // Double Click / Double Tap to LIKE (❤️) - Always guarantees like is preserved
+  const handleLikeMessage = async (msg: DirectMessage, forceAdd: boolean = true) => {
     if (msg.deletedForEveryone) return;
 
-    // Trigger Heart burst visual
+    // Trigger Heart burst visual pop
     setHeartBurstId(msg.id);
-    setTimeout(() => setHeartBurstId(null), 850);
+    setTimeout(() => setHeartBurstId(null), 950);
 
-    // Optimistic toggle
     const currentReactions = msg.reactions || [];
     const hasHeart = currentReactions.some(
       (r) => r.userId === currentUser.id && r.emoji === '❤️'
     );
 
     let updatedReactions: DirectMessageReaction[];
-    if (hasHeart) {
-      updatedReactions = currentReactions.filter(
-        (r) => !(r.userId === currentUser.id && r.emoji === '❤️')
-      );
-    } else {
+    if (forceAdd) {
+      // Force add: always ensure ❤️ is attached, never toggle off to empty
       updatedReactions = [
         ...currentReactions.filter((r) => r.userId !== currentUser.id),
         {
@@ -456,6 +453,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
           emoji: '❤️'
         }
       ];
+    } else {
+      if (hasHeart) {
+        updatedReactions = currentReactions.filter(
+          (r) => !(r.userId === currentUser.id && r.emoji === '❤️')
+        );
+      } else {
+        updatedReactions = [
+          ...currentReactions.filter((r) => r.userId !== currentUser.id),
+          {
+            userId: currentUser.id,
+            userName: `${currentUser.prenom} ${currentUser.nom}`,
+            emoji: '❤️'
+          }
+        ];
+      }
     }
 
     setMessages((prev) => {
@@ -467,11 +479,14 @@ export const ChatView: React.FC<ChatViewProps> = ({
     });
 
     try {
-      await api.chat.toggleReaction(msg.id, '❤️');
+      await api.chat.toggleReaction(msg.id, '❤️', forceAdd ? 'add' : 'toggle');
     } catch (err) {
       console.error('Failed to react', err);
     }
   };
+
+  // Backwards compatible alias
+  const handleToggleLike = (msg: DirectMessage) => handleLikeMessage(msg, true);
 
   // Long press handling for desktop mouse
   const handleMouseDown = (msg: DirectMessage) => {
@@ -509,9 +524,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
     // Check for double tap
     const now = Date.now();
     const lastTap = lastTapRef.current[msg.id] || 0;
-    if (now - lastTap < 320) {
+    if (now - lastTap < 350) {
       // Double tap detected!
-      handleToggleLike(msg);
+      lastTouchLikeRef.current = now;
+      handleLikeMessage(msg, true);
       lastTapRef.current[msg.id] = 0;
     } else {
       lastTapRef.current[msg.id] = now;
@@ -525,19 +541,26 @@ export const ChatView: React.FC<ChatViewProps> = ({
     }
   };
 
-  // Emoji reaction pick from context menu
-  const handleSelectEmoji = async (msg: DirectMessage, emoji: string) => {
+  // Emoji reaction pick from context menu or reaction badge
+  const handleSelectEmoji = async (
+    msg: DirectMessage,
+    emoji: string,
+    action: 'add' | 'remove' | 'toggle' = 'toggle'
+  ) => {
     setContextMenuMessage(null);
     if (msg.deletedForEveryone) return;
+
+    if (emoji === '❤️' && action !== 'remove') {
+      setHeartBurstId(msg.id);
+      setTimeout(() => setHeartBurstId(null), 950);
+    }
 
     // Optimistic reaction update
     const currentReactions = msg.reactions || [];
     const existing = currentReactions.find((r) => r.userId === currentUser.id);
 
     let updatedReactions: DirectMessageReaction[];
-    if (existing && existing.emoji === emoji) {
-      updatedReactions = currentReactions.filter((r) => r.userId !== currentUser.id);
-    } else {
+    if (action === 'add') {
       updatedReactions = [
         ...currentReactions.filter((r) => r.userId !== currentUser.id),
         {
@@ -546,6 +569,22 @@ export const ChatView: React.FC<ChatViewProps> = ({
           emoji
         }
       ];
+    } else if (action === 'remove') {
+      updatedReactions = currentReactions.filter((r) => r.userId !== currentUser.id);
+    } else {
+      // toggle
+      if (existing && existing.emoji === emoji) {
+        updatedReactions = currentReactions.filter((r) => r.userId !== currentUser.id);
+      } else {
+        updatedReactions = [
+          ...currentReactions.filter((r) => r.userId !== currentUser.id),
+          {
+            userId: currentUser.id,
+            userName: `${currentUser.prenom} ${currentUser.nom}`,
+            emoji
+          }
+        ];
+      }
     }
 
     setMessages((prev) => {
@@ -557,7 +596,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
     });
 
     try {
-      await api.chat.toggleReaction(msg.id, emoji);
+      await api.chat.toggleReaction(msg.id, emoji, action);
     } catch (err) {
       console.error('Failed to react', err);
     }
@@ -714,30 +753,30 @@ export const ChatView: React.FC<ChatViewProps> = ({
         
         {/* LEFT COLUMN: Conversations List & Search (Fixed Header & Scrollable List) */}
         <div
-          className={`w-full md:w-80 lg:w-96 flex flex-col h-full min-h-0 border-r border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-950/40 ${
+          className={`w-full md:w-80 lg:w-96 flex flex-col h-full min-h-0 border-r border-blue-100 dark:border-blue-950/80 shrink-0 bg-slate-50/60 dark:bg-[#090f20] ${
             activePartner ? 'hidden md:flex' : 'flex'
           }`}
         >
           {/* Fixed Left Header */}
-          <div className="shrink-0 p-3.5 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
+          <div className="shrink-0 p-3.5 sm:p-4 border-b border-blue-100 dark:border-blue-950 flex items-center justify-between bg-white dark:bg-[#0c142b]">
             <div className="flex items-center space-x-2">
               {onGoBack && (
                 <button
                   onClick={onGoBack}
-                  className="p-1.5 rounded-xl bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/50 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 transition mr-0.5"
+                  className="p-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition mr-0.5"
                   title="Revenir au fil social"
                 >
-                  <ArrowLeft className="w-4 h-4 text-indigo-500" />
+                  <ArrowLeft className="w-4 h-4 text-blue-600" />
                 </button>
               )}
               <h2 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
                 <span>Conversations</span>
-                <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
               </h2>
             </div>
             <button
               onClick={loadConversations}
-              className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition"
+              className="p-1.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950 text-slate-500 hover:text-blue-600 transition"
               title="Rafraîchir"
             >
               <RefreshCw className="w-4 h-4" />
@@ -745,15 +784,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
           </div>
 
           {/* Fixed Search Input */}
-          <div className="shrink-0 p-3 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
+          <div className="shrink-0 p-3 border-b border-blue-100 dark:border-blue-950 bg-white/60 dark:bg-[#0c142b]/60">
             <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Démarrer une conversation..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 shadow-2xs transition"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-white dark:bg-[#121c38] border border-blue-100 dark:border-blue-900/60 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-950 shadow-2xs transition"
               />
               {searchQuery && (
                 <button
@@ -768,8 +807,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
           {/* Search Results Dropdown */}
           {searchQuery.trim().length > 0 && (
-            <div className="shrink-0 p-2 border-b border-slate-200 dark:border-slate-800 bg-indigo-50/70 dark:bg-indigo-950/30 max-h-48 overflow-y-auto">
-              <div className="text-[10px] font-bold text-indigo-800 dark:text-indigo-300 uppercase px-2 py-1">
+            <div className="shrink-0 p-2 border-b border-blue-100 dark:border-blue-950 bg-blue-50/80 dark:bg-blue-950/40 max-h-48 overflow-y-auto">
+              <div className="text-[10px] font-bold text-blue-800 dark:text-blue-300 uppercase px-2 py-1">
                 Résultats de recherche ({searchResults.length})
               </div>
               {isSearchingUsers ? (
@@ -789,7 +828,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     <img
                       src={u.avatarUrl}
                       alt={u.prenom}
-                      className="w-7 h-7 rounded-full object-cover border border-indigo-500 shrink-0"
+                      className="w-7 h-7 rounded-full object-cover border border-blue-500 shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
@@ -807,12 +846,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
           <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
             {loadingConversations ? (
               <div className="py-12 flex flex-col items-center justify-center text-slate-400">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600 mb-2" />
                 <span className="text-xs font-medium">Chargement des conversations...</span>
               </div>
             ) : conversations.length === 0 ? (
               <div className="py-12 px-4 text-center text-slate-400">
-                <MessageSquare className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700 mb-2" />
+                <MessageSquare className="w-8 h-8 mx-auto text-blue-300 dark:text-blue-800 mb-2" />
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Aucune conversation</p>
                 <p className="text-[11px] text-slate-500">
                   Recherchez un contact ci-dessus pour échanger instantanément.
@@ -827,15 +866,15 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     onClick={() => selectPartnerById(c.partner.id)}
                     className={`flex items-center space-x-3 p-3 rounded-xl cursor-pointer transition select-none ${
                       isSelected
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'hover:bg-white dark:hover:bg-slate-800/70 text-slate-900 dark:text-white'
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
+                        : 'hover:bg-white dark:hover:bg-[#121c38] text-slate-900 dark:text-white'
                     }`}
                   >
                     <div className="relative shrink-0">
                       <img
                         src={c.partner.avatarUrl}
                         alt={c.partner.prenom}
-                        className="w-11 h-11 rounded-full object-cover border-2 border-indigo-500/40"
+                        className="w-11 h-11 rounded-full object-cover border-2 border-blue-400/50"
                       />
                       {c.unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-xs animate-pulse">
@@ -849,7 +888,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         <span className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
                           {c.partner.prenom} {c.partner.nom}
                         </span>
-                        <span className={`text-[10px] ${isSelected ? 'text-indigo-100' : 'text-slate-400'}`}>
+                        <span className={`text-[10px] ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
                           {new Date(c.lastMessage.createdAt).toLocaleTimeString('fr-FR', {
                             hour: '2-digit',
                             minute: '2-digit'
@@ -857,7 +896,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         </span>
                       </div>
 
-                      <p className={`text-[11px] truncate mt-0.5 ${isSelected ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                      <p className={`text-[11px] truncate mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
                         {c.lastMessage.content || (c.lastMessage.attachment ? `[Pièce jointe : ${c.lastMessage.attachment.type}]` : 'Nouveau message')}
                       </p>
                     </div>
@@ -870,22 +909,22 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
         {/* RIGHT COLUMN: Active Chat Conversation (Fixed Header + Scrollable Messages + Fixed Input) */}
         <div
-          className={`w-full flex-1 flex flex-col h-full min-h-0 bg-white dark:bg-slate-900 relative ${
+          className={`w-full flex-1 flex flex-col h-full min-h-0 bg-white dark:bg-[#070d1d] relative ${
             !activePartner ? 'hidden md:flex' : 'flex'
           }`}
         >
           {activePartner ? (
             <>
               {/* FIXED TOP CHAT HEADER */}
-              <div className="shrink-0 z-20 px-3 sm:px-4 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-xs">
+              <div className="shrink-0 z-20 px-3 sm:px-4 py-3 border-b border-blue-100 dark:border-blue-950 flex items-center justify-between bg-white/95 dark:bg-[#0c142b]/95 backdrop-blur-md shadow-xs">
                 <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
                   {/* Immediate Back Button to Return to Conversations List */}
                   <button
                     onClick={() => setActivePartner(null)}
-                    className="p-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-300 hover:text-indigo-600 border border-slate-200 dark:border-slate-700 flex items-center space-x-1.5 text-xs font-bold transition shrink-0"
+                    className="p-1.5 px-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center space-x-1.5 text-xs font-bold transition shrink-0"
                     title="Retour aux conversations"
                   >
-                    <ArrowLeft className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <ArrowLeft className="w-4 h-4 text-blue-600 shrink-0" />
                     <span>Retour</span>
                   </button>
 
@@ -893,13 +932,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     src={activePartner.avatarUrl}
                     alt={activePartner.prenom}
                     onClick={() => onOpenUserProfile(activePartner.id)}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500 cursor-pointer hover:opacity-90 shrink-0"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-blue-500 cursor-pointer hover:opacity-90 shrink-0"
                   />
 
                   <div className="min-w-0">
                     <div
                       onClick={() => onOpenUserProfile(activePartner.id)}
-                      className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white cursor-pointer hover:text-indigo-600 truncate flex items-center space-x-1.5"
+                      className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white cursor-pointer hover:text-blue-600 truncate flex items-center space-x-1.5"
                     >
                       <span>
                         {activePartner.prenom} {activePartner.nom}
@@ -910,7 +949,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium truncate flex items-center space-x-1">
+                    <div className="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate flex items-center space-x-1">
                       <span>{activePartner.promo || 'Étudiant'}</span>
                       <span>•</span>
                       <span className="text-[10px] text-emerald-500 font-medium flex items-center space-x-1">
@@ -1028,7 +1067,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     return (
                       <div
                         key={msg.id}
-                        className={`flex items-end space-x-2 group relative ${
+                        className={`flex items-end space-x-2 group relative mb-3.5 ${
                           isMe ? 'justify-end' : 'justify-start'
                         }`}
                       >
@@ -1036,25 +1075,44 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           <img
                             src={msg.senderAvatar}
                             alt={msg.senderName}
-                            className="w-7 h-7 rounded-full object-cover mb-1 shrink-0 cursor-pointer"
+                            className="w-8 h-8 rounded-full object-cover mb-1 shrink-0 cursor-pointer border border-blue-200 dark:border-blue-900"
                             onClick={() => onOpenUserProfile(msg.senderId)}
                           />
                         )}
 
-                        {/* Options button on left if sender is Me */}
-                        {isMe && (
-                          <button
-                            onClick={() => setContextMenuMessage(msg)}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition shrink-0 self-center"
-                            title="Options du message"
-                          >
-                            <MoreVertical className="w-3.5 h-3.5" />
-                          </button>
+                        {/* Quick hover action bar on desktop (Left of sender message) */}
+                        {isMe && !msg.deletedForEveryone && (
+                          <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-1 p-1 bg-white/95 dark:bg-slate-900/95 border border-blue-100 dark:border-blue-900/60 rounded-full shadow-md transition shrink-0 self-center backdrop-blur-xs">
+                            <button
+                              onClick={() => handleLikeMessage(msg, true)}
+                              className="p-1 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                              title="J'aime (❤️)"
+                            >
+                              <Heart className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleStartReply(msg)}
+                              className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
+                              title="Répondre"
+                            >
+                              <Reply className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setContextMenuMessage(msg)}
+                              className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white transition"
+                              title="Plus d'options"
+                            >
+                              <MoreVertical className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
 
                         {/* Message Bubble with Fast Double-Click & Long-Click handlers */}
                         <div
-                          onDoubleClick={() => handleToggleLike(msg)}
+                          onDoubleClick={() => {
+                            if (Date.now() - lastTouchLikeRef.current < 700) return;
+                            handleLikeMessage(msg, true);
+                          }}
                           onMouseDown={() => handleMouseDown(msg)}
                           onMouseUp={handleMouseUp}
                           onTouchStart={() => handleTouchStart(msg)}
@@ -1064,25 +1122,27 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             e.preventDefault();
                             setContextMenuMessage(msg);
                           }}
-                          className={`relative max-w-[84%] sm:max-w-md rounded-2xl p-3 shadow-2xs select-text transition-all cursor-pointer ${
+                          className={`relative max-w-[84%] sm:max-w-md rounded-2xl p-3.5 select-text transition-all cursor-pointer ${
                             msg.deletedForEveryone
                               ? 'bg-slate-100 dark:bg-slate-800/60 text-slate-400 italic border border-slate-200 dark:border-slate-800'
                               : isMe
-                              ? 'bg-indigo-600 text-white rounded-br-xs'
-                              : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 rounded-bl-xs'
+                              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-br-xs shadow-md shadow-blue-600/20'
+                              : 'bg-white dark:bg-[#121c38] text-slate-900 dark:text-white border border-blue-100 dark:border-blue-900/60 rounded-bl-xs shadow-xs'
                           }`}
                         >
                           {/* Heart Burst Animation on Double Click */}
                           {heartBurstId === msg.id && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 animate-ping">
-                              <Heart className="w-12 h-12 fill-rose-500 text-rose-500 drop-shadow-lg" />
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                              <div className="animate-heart-burst flex items-center justify-center">
+                                <Heart className="w-14 h-14 fill-rose-500 text-rose-500 drop-shadow-[0_4px_16px_rgba(244,63,94,0.6)]" />
+                              </div>
                             </div>
                           )}
 
                           {/* Forwarded Header indicator */}
                           {msg.isForwarded && (
                             <div className={`flex items-center space-x-1 text-[10px] font-bold mb-1.5 opacity-80 ${
-                              isMe ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'
+                              isMe ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'
                             }`}>
                               <Forward className="w-3 h-3" />
                               <span>Message transféré</span>
@@ -1094,8 +1154,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             <div
                               className={`p-2 rounded-xl mb-2 text-xs border-l-2 ${
                                 isMe
-                                  ? 'bg-indigo-700/60 border-indigo-300 text-indigo-50'
-                                  : 'bg-slate-100 dark:bg-slate-700/60 border-indigo-500 text-slate-700 dark:text-slate-200'
+                                  ? 'bg-blue-800/60 border-blue-300 text-blue-50'
+                                  : 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-slate-700 dark:text-slate-200'
                               }`}
                             >
                               <div className="font-bold text-[10px] opacity-90 flex items-center space-x-1 mb-0.5">
@@ -1127,7 +1187,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           {msg.attachment && msg.attachment.type === 'audio' && !msg.deletedForEveryone && (
                             <div
                               className={`p-2 rounded-xl mb-2 flex items-center space-x-2.5 ${
-                                isMe ? 'bg-indigo-700/60' : 'bg-slate-100 dark:bg-slate-700/60'
+                                isMe ? 'bg-blue-800/50' : 'bg-blue-50 dark:bg-blue-950/50'
                               }`}
                             >
                               <button
@@ -1137,7 +1197,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                                   togglePlayAudio(msg.id, msg.attachment!.url);
                                 }}
                                 className={`w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0 shadow-xs ${
-                                  isMe ? 'bg-indigo-500 hover:bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-500'
+                                  isMe ? 'bg-blue-500 hover:bg-blue-400' : 'bg-blue-600 hover:bg-blue-500'
                                 }`}
                               >
                                 {playingAudioId === msg.id ? (
@@ -1162,10 +1222,10 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           {msg.attachment && msg.attachment.type === 'document' && !msg.deletedForEveryone && (
                             <div
                               className={`p-2.5 rounded-xl mb-2 flex items-center space-x-2.5 ${
-                                isMe ? 'bg-indigo-700/60' : 'bg-slate-100 dark:bg-slate-700/60'
+                                isMe ? 'bg-blue-800/50' : 'bg-blue-50 dark:bg-blue-950/50'
                               }`}
                             >
-                              <FileText className="w-6 h-6 text-indigo-300 shrink-0" />
+                              <FileText className="w-6 h-6 text-blue-400 shrink-0" />
                               <div className="min-w-0 flex-1">
                                 <div className="text-xs font-bold truncate">
                                   {msg.attachment.name}
@@ -1200,7 +1260,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           {/* Message Footer: Timestamp + Read status */}
                           <div
                             className={`flex items-center justify-end space-x-1 text-[10px] mt-1 select-none ${
-                              isMe ? 'text-indigo-200' : 'text-slate-400'
+                              isMe ? 'text-blue-100' : 'text-slate-400'
                             }`}
                           >
                             {msg.isEdited && (
@@ -1215,9 +1275,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             {isMe && (
                               <span>
                                 {msg.isSending ? (
-                                  <Loader2 className="w-3 h-3 animate-spin text-indigo-200 inline" />
+                                  <Loader2 className="w-3 h-3 animate-spin text-blue-200 inline" />
                                 ) : msg.isRead ? (
-                                  <CheckCheck className="w-3.5 h-3.5 text-indigo-200 inline" />
+                                  <CheckCheck className="w-3.5 h-3.5 text-blue-200 inline" />
                                 ) : (
                                   <Check className="w-3.5 h-3.5 opacity-70 inline" />
                                 )}
@@ -1225,9 +1285,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
                             )}
                           </div>
 
-                          {/* Reaction Pills below Bubble */}
+                          {/* Floating Modern Reaction Badges (elevated & always visible) */}
                           {msg.reactions && msg.reactions.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1.5 pt-1 border-t border-black/10 dark:border-white/10">
+                            <div
+                              className={`absolute -bottom-3 z-20 flex flex-wrap items-center gap-1 ${
+                                isMe ? 'right-2' : 'left-2'
+                              }`}
+                            >
                               {Array.from(new Set(msg.reactions.map((r) => r.emoji))).map((emoji: string) => {
                                 const count = msg.reactions?.filter((r) => r.emoji === emoji).length || 0;
                                 const isMyReact = msg.reactions?.some(
@@ -1240,16 +1304,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleSelectEmoji(msg, emoji);
+                                      handleSelectEmoji(msg, emoji, 'toggle');
                                     }}
-                                    className={`inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-bold transition shadow-2xs ${
+                                    title={isMyReact ? "Vous avez réagi. Cliquez pour retirer la réaction." : "Cliquer pour réagir"}
+                                    className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-xs font-bold transition-all shadow-md cursor-pointer hover:scale-105 active:scale-95 ${
                                       isMyReact
-                                        ? 'bg-rose-500/20 text-rose-500 border border-rose-500/40'
-                                        : 'bg-black/10 dark:bg-white/10 text-slate-700 dark:text-slate-300'
+                                        ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-2 border-blue-500 ring-2 ring-blue-500/20'
+                                        : 'bg-white dark:bg-[#152244] text-slate-700 dark:text-slate-200 border border-blue-200 dark:border-blue-800/80 hover:border-blue-400'
                                     }`}
                                   >
-                                    <span>{emoji}</span>
-                                    {count > 1 && <span className="text-[10px]">{count}</span>}
+                                    <span className="text-sm leading-none">{emoji}</span>
+                                    <span className={`text-[10px] font-black ${isMyReact ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                      {count}
+                                    </span>
                                   </button>
                                 );
                               })}
@@ -1257,15 +1324,31 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           )}
                         </div>
 
-                        {/* Options button on right if sender is Partner */}
-                        {!isMe && (
-                          <button
-                            onClick={() => setContextMenuMessage(msg)}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white transition shrink-0 self-center"
-                            title="Options du message"
-                          >
-                            <MoreVertical className="w-3.5 h-3.5" />
-                          </button>
+                        {/* Quick hover action bar on desktop (Right of partner message) */}
+                        {!isMe && !msg.deletedForEveryone && (
+                          <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-1 p-1 bg-white/95 dark:bg-slate-900/95 border border-blue-100 dark:border-blue-900/60 rounded-full shadow-md transition shrink-0 self-center backdrop-blur-xs">
+                            <button
+                              onClick={() => handleLikeMessage(msg, true)}
+                              className="p-1 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
+                              title="J'aime (❤️)"
+                            >
+                              <Heart className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleStartReply(msg)}
+                              className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
+                              title="Répondre"
+                            >
+                              <Reply className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setContextMenuMessage(msg)}
+                              className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-white transition"
+                              title="Plus d'options"
+                            >
+                              <MoreVertical className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     );
@@ -1315,9 +1398,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       {/* Reply button */}
                       <button
                         onClick={() => handleStartReply(contextMenuMessage)}
-                        className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition"
+                        className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-700 dark:text-slate-200 hover:text-blue-600 transition"
                       >
-                        <Reply className="w-4 h-4 text-indigo-500" />
+                        <Reply className="w-4 h-4 text-blue-600" />
                         <span>Répondre à ce message</span>
                       </button>
 
@@ -1327,7 +1410,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                           setForwardingMessage(contextMenuMessage);
                           setContextMenuMessage(null);
                         }}
-                        className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition"
+                        className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-700 dark:text-slate-200 hover:text-blue-600 transition"
                       >
                         <Forward className="w-4 h-4 text-blue-500" />
                         <span>Transférer le message</span>
@@ -1338,7 +1421,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                         !contextMenuMessage.deletedForEveryone && (
                           <button
                             onClick={() => handleStartEdit(contextMenuMessage)}
-                            className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition"
+                            className="w-full flex items-center space-x-2.5 p-2.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/40 text-slate-700 dark:text-slate-200 hover:text-amber-600 transition"
                           >
                             <Edit2 className="w-4 h-4 text-amber-500" />
                             <span>Modifier le message</span>
@@ -1380,7 +1463,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                   onClick={() => setConfirmDeleteEveryone(null)}
                 >
                   <div
-                    className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xl space-y-4"
+                    className="w-full max-w-sm bg-white dark:bg-[#0c142b] border border-blue-100 dark:border-blue-950 rounded-2xl p-5 shadow-xl space-y-4"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex items-center space-x-3">
@@ -1417,11 +1500,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
               {/* REPLYING PREVIEW BANNER */}
               {replyingTo && (
-                <div className="shrink-0 px-4 py-2 bg-indigo-50 dark:bg-indigo-950/60 border-t border-indigo-200 dark:border-indigo-800 flex items-center justify-between">
+                <div className="shrink-0 px-4 py-2 bg-blue-50 dark:bg-blue-950/80 border-t border-blue-200 dark:border-blue-900 flex items-center justify-between">
                   <div className="flex items-center space-x-2 text-xs truncate">
-                    <Reply className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <Reply className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                     <div className="truncate">
-                      <span className="font-bold text-indigo-800 dark:text-indigo-200">
+                      <span className="font-bold text-blue-900 dark:text-blue-200">
                         Réponse à {replyingTo.senderName} :
                       </span>{' '}
                       <span className="text-slate-600 dark:text-slate-300 italic truncate">
@@ -1461,8 +1544,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
               {/* Pending Attachment Preview Banner */}
               {pendingAttachment && (
-                <div className="shrink-0 p-2.5 px-4 bg-indigo-50 dark:bg-indigo-950/50 border-t border-indigo-200 dark:border-indigo-800 flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-xs font-bold text-indigo-800 dark:text-indigo-300 truncate">
+                <div className="shrink-0 p-2.5 px-4 bg-blue-50 dark:bg-blue-950/70 border-t border-blue-200 dark:border-blue-900 flex items-center justify-between">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-blue-800 dark:text-blue-300 truncate">
                     {pendingAttachment.type === 'image' && <ImageIcon className="w-4 h-4" />}
                     {pendingAttachment.type === 'audio' && <Mic className="w-4 h-4" />}
                     {pendingAttachment.type === 'document' && <Paperclip className="w-4 h-4" />}
@@ -1479,7 +1562,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
               {/* Voice Recorder Drawer */}
               {showVoiceRecorder && (
-                <div className="shrink-0 p-3 bg-slate-100 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700">
+                <div className="shrink-0 p-3 bg-blue-50/70 dark:bg-[#0c142b] border-t border-blue-100 dark:border-blue-900">
                   <AudioRecorder
                     onAudioReady={(att) => {
                       setPendingAttachment({
@@ -1498,7 +1581,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
               {/* FIXED BOTTOM CHAT INPUT BAR */}
               <form
                 onSubmit={handleSendMessage}
-                className="shrink-0 p-2.5 sm:p-3 border-t border-slate-200 dark:border-slate-800 flex items-center space-x-2 bg-white dark:bg-slate-900 shadow-xs"
+                className="shrink-0 p-2.5 sm:p-3 border-t border-blue-100 dark:border-blue-950 flex items-center space-x-2 bg-white dark:bg-[#0c142b] shadow-xs"
               >
                 {/* Hidden file inputs */}
                 <input
@@ -1522,7 +1605,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
                     disabled={isBlocked || sending}
-                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition"
                     title="Envoyer une photo"
                   >
                     <ImageIcon className="w-5 h-5" />
@@ -1532,7 +1615,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     type="button"
                     onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
                     disabled={isBlocked || sending}
-                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition"
                     title="Enregistrer un message vocal"
                   >
                     <Mic className="w-5 h-5" />
@@ -1542,7 +1625,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     type="button"
                     onClick={() => docInputRef.current?.click()}
                     disabled={isBlocked || sending}
-                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+                    className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition"
                     title="Envoyer un document"
                   >
                     <Paperclip className="w-5 h-5" />
@@ -1565,7 +1648,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                       : 'Écrire un message instantané...'
                   }
                   disabled={isBlocked || sending}
-                  className="flex-1 py-2.5 px-3.5 rounded-xl text-xs sm:text-sm bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 disabled:opacity-50 transition shadow-2xs"
+                  className="flex-1 py-2.5 px-3.5 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-[#121c38] border border-blue-100 dark:border-blue-900/60 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-950 disabled:opacity-50 transition shadow-2xs"
                 />
 
                 {/* Send button */}
@@ -1576,7 +1659,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     sending ||
                     (!inputText.trim() && !pendingAttachment)
                   }
-                  className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold transition flex items-center justify-center shadow-xs shrink-0"
+                  className="p-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 disabled:opacity-50 text-white font-bold transition flex items-center justify-center shadow-md shadow-blue-500/20 shrink-0"
                   title={editingMessage ? 'Sauvegarder' : 'Envoyer'}
                 >
                   {sending ? (
@@ -1591,7 +1674,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center mb-3 border border-indigo-200 dark:border-indigo-800 shadow-xs">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 flex items-center justify-center mb-3 border border-blue-200 dark:border-blue-900 shadow-xs">
                 <Send className="w-8 h-8" />
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">

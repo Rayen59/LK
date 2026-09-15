@@ -210,7 +210,7 @@ chatRouter.post("/messages/:messageId/react", (req: Request, res: Response) => {
     return;
   }
 
-  const { emoji } = req.body;
+  const { emoji, action = "toggle" } = req.body;
   if (!emoji) {
     res.status(400).json({ error: "Émoji requis." });
     return;
@@ -231,21 +231,39 @@ chatRouter.post("/messages/:messageId/react", (req: Request, res: Response) => {
   msg.reactions = msg.reactions || [];
   const existingIdx = msg.reactions.findIndex((r) => r.userId === user.id);
 
-  if (existingIdx >= 0) {
-    if (msg.reactions[existingIdx].emoji === emoji) {
-      // Toggle off
-      msg.reactions.splice(existingIdx, 1);
-    } else {
-      // Change emoji
+  if (action === "add") {
+    // Guaranteed addition: If not present, add it; if already present with same or different emoji, update to this emoji
+    if (existingIdx >= 0) {
       msg.reactions[existingIdx].emoji = emoji;
+    } else {
+      msg.reactions.push({
+        userId: user.id,
+        userName: `${user.prenom} ${user.nom}`,
+        emoji
+      });
+    }
+  } else if (action === "remove") {
+    if (existingIdx >= 0) {
+      msg.reactions.splice(existingIdx, 1);
     }
   } else {
-    // Add reaction
-    msg.reactions.push({
-      userId: user.id,
-      userName: `${user.prenom} ${user.nom}`,
-      emoji
-    });
+    // Default toggle
+    if (existingIdx >= 0) {
+      if (msg.reactions[existingIdx].emoji === emoji) {
+        // Toggle off
+        msg.reactions.splice(existingIdx, 1);
+      } else {
+        // Change emoji
+        msg.reactions[existingIdx].emoji = emoji;
+      }
+    } else {
+      // Add reaction
+      msg.reactions.push({
+        userId: user.id,
+        userName: `${user.prenom} ${user.nom}`,
+        emoji
+      });
+    }
   }
 
   saveDatabase();

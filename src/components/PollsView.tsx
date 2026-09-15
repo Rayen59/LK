@@ -131,33 +131,33 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
         <div className="mb-4">
           <button
             onClick={onGoBack}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-bold text-xs shadow-2xs transition group"
+            className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#0c142b] border border-blue-100 dark:border-blue-900 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-xs shadow-2xs transition group cursor-pointer"
             title="Revenir à la page précédente"
           >
-            <ArrowLeft className="w-4 h-4 text-indigo-500 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-4 h-4 text-blue-500 group-hover:-translate-x-0.5 transition-transform" />
             <span>Revenir à la page précédente</span>
           </button>
         </div>
       )}
 
       {/* Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-slate-900 border border-slate-800 p-6 rounded-3xl text-white shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-gradient-to-r from-[#0a163a] via-[#0d2358] to-[#0a163a] border border-blue-900/60 p-6 sm:p-7 rounded-3xl text-white shadow-lg shadow-blue-950/30">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1">
+          <div className="flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-blue-400 mb-1">
             <BarChart3 className="w-4 h-4" />
             <span>Consultations & Avis</span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
             Sondages de la Communauté
           </h2>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl">
+          <p className="text-blue-200/80 text-xs sm:text-sm mt-1 max-w-xl">
             Sondez la communauté sur vos sujets préférés, organisez des votes et découvrez les avis en temps réel.
           </p>
         </div>
 
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition"
+          className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md shadow-blue-500/30 transition cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Lancer un Sondage</span>
@@ -167,12 +167,12 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
       {/* Polls List */}
       {loading ? (
         <div className="text-center py-16 text-slate-400 flex flex-col items-center">
-          <Loader2 className="w-6 h-6 animate-spin text-indigo-500 mb-2" />
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500 mb-2" />
           <span className="text-xs">Chargement des sondages...</span>
         </div>
       ) : polls.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-2xs">
-          <BarChart3 className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto mb-3" />
+        <div className="bg-white dark:bg-[#0c142b] rounded-3xl border border-blue-100 dark:border-blue-900 p-12 text-center shadow-xs">
+          <BarChart3 className="w-12 h-12 text-blue-200 dark:text-blue-900 mx-auto mb-3" />
           <h3 className="text-base font-bold text-slate-800 dark:text-white">Aucun sondage en cours</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
             Soyez le premier à recueillir l'avis des membres sur un sujet d'actualité ou d'intérêt commun !
@@ -188,7 +188,7 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
             return (
               <div
                 key={poll.id}
-                className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-2xs space-y-4"
+                className="bg-white dark:bg-[#0c142b] rounded-2xl border border-blue-100 dark:border-blue-900/80 p-5 sm:p-6 shadow-xs space-y-4"
               >
                 {/* Poll Header */}
                 <div className="flex items-start justify-between">
@@ -198,7 +198,7 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{poll.description}</p>
                     )}
                   </div>
-                  <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-full border border-indigo-100 dark:border-indigo-900/50 shrink-0 ml-3">
+                  <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/80 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800 shrink-0 ml-3">
                     {totalVotes} vote(s)
                   </span>
                 </div>
@@ -216,16 +216,16 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                         type="button"
                         onClick={() => handleVote(poll.id, opt.id)}
                         disabled={votingId === poll.id}
-                        className={`w-full relative overflow-hidden text-left p-3.5 rounded-xl border transition-all ${
+                        className={`w-full relative overflow-hidden text-left p-3.5 rounded-xl border transition-all cursor-pointer ${
                           hasVotedThis
-                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30'
-                            : 'border-slate-200 dark:border-slate-750 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/60 dark:bg-slate-800/40'
+                            ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/40 shadow-xs'
+                            : 'border-blue-100 dark:border-blue-950 hover:border-blue-300 dark:hover:border-blue-800 bg-blue-50/20 dark:bg-[#070d20]'
                         }`}
                       >
                         {/* Progress Bar Fill */}
                         <div
                           className={`absolute top-0 bottom-0 left-0 transition-all duration-500 ${
-                            hasVotedThis ? 'bg-indigo-200/60 dark:bg-indigo-900/40' : 'bg-slate-200/60 dark:bg-slate-700/40'
+                            hasVotedThis ? 'bg-blue-200/70 dark:bg-blue-800/40' : 'bg-blue-100/60 dark:bg-blue-950/50'
                           }`}
                           style={{ width: `${percent}%` }}
                         />
@@ -233,12 +233,14 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                         {/* Content */}
                         <div className="relative z-10 flex items-center justify-between">
                           <div className="flex items-center space-x-2">
-                            <span className="text-xs font-semibold text-slate-800 dark:text-slate-100">{opt.text}</span>
+                            <span className={`text-xs font-bold ${hasVotedThis ? 'text-blue-900 dark:text-blue-200' : 'text-slate-800 dark:text-slate-100'}`}>
+                              {opt.text}
+                            </span>
                             {hasVotedThis && (
-                              <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                              <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                             )}
                           </div>
-                          <div className="flex items-center space-x-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                          <div className="flex items-center space-x-2 text-xs font-black text-blue-700 dark:text-blue-300">
                             <span>{percent}%</span>
                             <span className="text-[11px] text-slate-400 font-normal">({optionVotes})</span>
                           </div>
@@ -249,14 +251,14 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                 </div>
 
                 {/* Poll Footer */}
-                <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-blue-50 dark:border-blue-950">
                   <div className="flex items-center space-x-2">
                     <img
                       src={poll.authorAvatar}
                       alt={poll.authorName}
-                      className="w-5 h-5 rounded-full object-cover"
+                      className="w-5 h-5 rounded-full object-cover border border-blue-200 dark:border-blue-800"
                     />
-                    <span className="text-slate-600 dark:text-slate-400">Lancé par {poll.authorName}</span>
+                    <span className="text-slate-600 dark:text-slate-400 font-medium">Lancé par {poll.authorName}</span>
                   </div>
 
                   <span>
@@ -274,8 +276,8 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
 
       {/* Create Poll Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md bg-white dark:bg-[#0c142b] rounded-3xl shadow-2xl border border-blue-100 dark:border-blue-900 overflow-hidden">
             <div className="p-6">
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Créer un Nouveau Sondage</h3>
               <p className="text-xs text-slate-500 mb-4">
@@ -298,7 +300,7 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                     placeholder="Ex: Quel est votre prochain projet ou sujet préféré ?"
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
+                    className="w-full px-3.5 py-2 bg-blue-50/40 dark:bg-[#060b1b] border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
 
@@ -309,7 +311,7 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                     placeholder="Ex: Précisions sur les choix, contexte..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 resize-none"
+                    className="w-full px-3.5 py-2 bg-blue-50/40 dark:bg-[#060b1b] border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
                   />
                 </div>
 
@@ -320,7 +322,7 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                       <button
                         type="button"
                         onClick={addOptionInput}
-                        className="text-xs text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+                        className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
                       >
                         + Ajouter une option
                       </button>
@@ -335,13 +337,13 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                         placeholder={`Option ${i + 1}`}
                         value={opt}
                         onChange={(e) => updateOptionText(i, e.target.value)}
-                        className="flex-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
+                        className="flex-1 px-3 py-1.5 bg-blue-50/40 dark:bg-[#060b1b] border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
                       {options.length > 2 && (
                         <button
                           type="button"
                           onClick={() => removeOptionInput(i)}
-                          className="p-1 text-slate-400 hover:text-rose-500 rounded"
+                          className="p-1 text-slate-400 hover:text-rose-500 rounded cursor-pointer"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -350,18 +352,18 @@ export const PollsView: React.FC<PollsViewProps> = ({ currentUser, onGoBack }) =
                   ))}
                 </div>
 
-                <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex justify-end space-x-2 pt-2 border-t border-blue-50 dark:border-blue-950">
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold"
+                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-xs font-bold cursor-pointer"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
                     disabled={creating}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs transition disabled:opacity-50"
+                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl text-xs font-bold shadow-sm transition disabled:opacity-50 cursor-pointer"
                   >
                     {creating ? 'Création...' : 'Lancer le sondage'}
                   </button>

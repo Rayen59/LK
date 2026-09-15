@@ -103,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800 text-slate-900 dark:text-slate-100 shadow-xs transition-colors">
+      <header className="fixed top-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0a1124]/95 backdrop-blur-xl border-b border-blue-100/80 dark:border-blue-950/80 text-slate-900 dark:text-slate-100 shadow-xs transition-colors">
         <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-6">
           <div className="flex items-center justify-between h-15 sm:h-16 gap-1.5 sm:gap-4">
             
@@ -114,33 +114,33 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   id="header-back-arrow-btn"
                   onClick={onGoBack}
-                  className="flex items-center space-x-1 px-2 sm:px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold transition-all active:scale-95 group shrink-0"
+                  className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-200 border border-blue-200/80 dark:border-blue-800/80 text-xs font-semibold transition-all active:scale-95 group shrink-0"
                   title="Revenir à la page précédente"
                   aria-label="Revenir à la page précédente"
                 >
-                  <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+                  <ArrowLeft className="w-4 h-4 text-blue-600 dark:text-blue-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
                   <span className="hidden sm:inline">Retour</span>
                 </button>
               )}
 
               <div
-                className="flex items-center space-x-2 cursor-pointer select-none min-w-0 shrink-0 group"
+                className="flex items-center space-x-2.5 cursor-pointer select-none min-w-0 shrink-0 group"
                 onClick={() => onTabChange('feed')}
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white shadow-sm shadow-indigo-500/25 group-hover:scale-105 transition-transform shrink-0">
-                  <span className="font-extrabold text-xs sm:text-sm tracking-tight">MK</span>
+                <div className="w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center text-white shadow-md shadow-blue-600/30 group-hover:scale-105 transition-transform shrink-0 border border-blue-400/30">
+                  <span className="font-black text-xs sm:text-sm tracking-tight text-white drop-shadow-xs">MK</span>
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center space-x-1 sm:space-x-1.5">
-                    <span className="font-bold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
-                      MK<span className="text-indigo-600 dark:text-indigo-400 font-normal ml-0.5">Social</span>
+                    <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
+                      MK<span className="text-blue-600 dark:text-blue-400 font-semibold ml-0.5">Social</span>
                     </span>
-                    <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-semibold uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900 shrink-0">
+                    <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
                       Live
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 hidden md:block font-medium truncate">
-                    Fil • Reels • Messagerie
+                  <p className="text-[10px] text-slate-500 dark:text-blue-300/70 hidden md:block font-medium truncate">
+                    Réseau Social Professionnel & Échanges
                   </p>
                 </div>
               </div>
@@ -156,10 +156,10 @@ export const Header: React.FC<HeaderProps> = ({
                     key={item.id}
                     id={`nav-btn-${item.id}`}
                     onClick={() => onTabChange(item.id as MainTabType)}
-                    className={`relative flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
+                    className={`relative flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                       isActive
-                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                        ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white shadow-sm shadow-blue-600/30'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50/70 dark:hover:bg-blue-950/50'
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -167,14 +167,14 @@ export const Header: React.FC<HeaderProps> = ({
                     {item.badge && (
                       <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
                         isActive 
-                          ? 'bg-indigo-500 text-white dark:bg-indigo-600' 
-                          : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+                          ? 'bg-white/20 text-white' 
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
                       }`}>
                         {item.badge}
                       </span>
                     )}
                     {item.unreadCount !== undefined && item.unreadCount > 0 && (
-                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
                         {item.unreadCount}
                       </span>
                     )}
@@ -186,10 +186,10 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   id="nav-btn-admin"
                   onClick={() => onTabChange('admin')}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                     activeTab === 'admin'
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/40 border border-purple-200 dark:border-purple-900'
+                      ? 'bg-blue-800 text-white shadow-xs'
+                      : 'text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800'
                   }`}
                 >
                   <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
@@ -201,17 +201,17 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Right Controls (Carefully scaled to never overflow on mobile) */}
             <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
               
-              {/* Friends Button (hidden on small mobile to avoid crowding since it's on bottom bar) */}
+              {/* Friends Button */}
               {onOpenFriendsModal && (
                 <button
                   onClick={onOpenFriendsModal}
-                  className="hidden sm:flex relative p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition items-center space-x-1 text-xs font-medium shrink-0"
+                  className="hidden sm:flex relative p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition items-center space-x-1 text-xs font-semibold shrink-0"
                   title="Gérer les amis et invitations"
                 >
                   <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                   <span className="hidden xl:inline">Amis</span>
                   {pendingFriendRequestsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white dark:border-[#0b0f19] shadow-xs animate-pulse">
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white dark:border-[#0a1124] shadow-xs animate-pulse">
                       {pendingFriendRequestsCount}
                     </span>
                   )}
@@ -236,7 +236,7 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Quick Document Search button */}
               <button
                 onClick={onOpenDocSearch}
-                className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition flex items-center space-x-1 text-xs font-medium shrink-0"
+                className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition flex items-center space-x-1 text-xs font-semibold shrink-0"
                 title="Rechercher des documents, cours, vocaux"
               >
                 <Files className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -247,23 +247,23 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="theme-toggle-btn"
                 onClick={onToggleDarkMode}
-                className="p-2 text-slate-600 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 rounded-xl transition shrink-0"
+                className="p-2 text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition shrink-0"
                 title={darkMode ? "Passer en mode clair" : "Activer le mode sombre"}
               >
                 {darkMode ? (
                   <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-400" />
                 ) : (
-                  <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-slate-600" />
+                  <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-blue-600" />
                 )}
               </button>
 
               {/* Current User Profile chip */}
               <div
                 onClick={() => onTabChange('profile')}
-                className={`hidden md:flex items-center space-x-2 py-1 px-2 rounded-xl transition cursor-pointer shrink-0 border ${
+                className={`hidden md:flex items-center space-x-2 py-1 px-2.5 rounded-xl transition cursor-pointer shrink-0 border ${
                   activeTab === 'profile'
-                    ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200'
-                    : 'bg-slate-100/80 dark:bg-slate-850 border-slate-200/80 dark:border-slate-700/80 hover:border-slate-300 dark:hover:border-slate-600'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 shadow-2xs'
+                    : 'bg-white dark:bg-[#0f1a38] border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 shadow-2xs'
                 }`}
                 title="Consulter mon profil et mes publications"
               >
@@ -271,7 +271,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <img
                     src={currentUser.avatarUrl}
                     alt={currentUser.prenom}
-                    className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                    className="w-7 h-7 rounded-full object-cover border-2 border-blue-500 shrink-0"
                     referrerPolicy="no-referrer"
                   />
                   {currentUser.isLocked && (
@@ -280,11 +280,11 @@ export const Header: React.FC<HeaderProps> = ({
                     </span>
                   )}
                 </div>
-                <div className="text-left min-w-0 max-w-[90px]">
-                  <div className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">
+                <div className="text-left min-w-0 max-w-[95px]">
+                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
                     {currentUser.prenom}
                   </div>
-                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  <div className="text-[10px] text-blue-600 dark:text-blue-300 font-medium truncate">
                     {currentUser.promo || 'Profil'}
                   </div>
                 </div>
@@ -294,12 +294,12 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 id="mobile-sliding-panel-btn"
                 onClick={onToggleSlidingPanel}
-                className="p-2 sm:px-2.5 sm:py-2 text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700/80 rounded-xl transition flex items-center space-x-1.5 shrink-0"
+                className="p-2 sm:px-2.5 sm:py-2 text-slate-700 dark:text-slate-200 bg-white dark:bg-[#0f1a38] hover:bg-blue-50 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900 rounded-xl transition flex items-center space-x-1.5 shrink-0 shadow-2xs"
                 title="Ouvrir le menu complet"
                 aria-label="Menu coulissant"
               >
-                <Menu className="w-4 h-4 text-slate-700 dark:text-slate-200" />
-                <span className="hidden sm:inline text-xs font-semibold">
+                <Menu className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span className="hidden sm:inline text-xs font-bold text-slate-800 dark:text-slate-200">
                   Menu
                 </span>
               </button>

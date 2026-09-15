@@ -466,11 +466,12 @@ export const api = {
     },
     toggleReaction: async (
       messageId: string,
-      emoji: string
+      emoji: string,
+      action?: 'add' | 'remove' | 'toggle'
     ): Promise<{ success: boolean; reactions: any[] }> => {
       return fetchWithAuth(`/api/messages/${messageId}/react`, {
         method: 'POST',
-        body: JSON.stringify({ emoji }),
+        body: JSON.stringify({ emoji, action }),
       });
     },
     editMessage: async (

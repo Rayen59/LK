@@ -133,40 +133,40 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-      <div onClick={onClose} className="fixed inset-0 bg-black/70 backdrop-blur-xs" />
+      <div onClick={onClose} className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs" />
 
-      <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 z-10 flex flex-col max-h-[85vh] overflow-hidden">
+      <div className="relative w-full max-w-xl bg-white dark:bg-[#0c142b] rounded-3xl shadow-2xl border border-blue-100 dark:border-blue-900 z-10 flex flex-col max-h-[85vh] overflow-hidden">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-blue-100 dark:border-blue-900 flex items-center justify-between bg-blue-50/30 dark:bg-[#0a163a]">
           <div className="flex items-center space-x-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 flex items-center justify-center border border-teal-200 dark:border-teal-800">
+            <div className="w-10 h-10 rounded-2xl bg-blue-600/10 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-200 dark:border-blue-800">
               <Users className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                 Réseau & Amis
               </h3>
-              <p className="text-xs text-slate-500">
-                Gérez vos connexions, vos invitations et découvrez des étudiants
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Gérez vos connexions, vos invitations et découvrez des membres
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+            className="p-1.5 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/50 text-slate-500 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center space-x-1 p-2 bg-slate-50 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800 text-xs font-bold overflow-x-auto">
+        <div className="flex items-center space-x-1 p-2 bg-blue-50/40 dark:bg-[#070d20] border-b border-blue-100 dark:border-blue-900 text-xs font-bold overflow-x-auto">
           <button
             onClick={() => setActiveTab('friends')}
-            className={`px-3 py-2 rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-2 rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'friends'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-blue-100/60 dark:hover:bg-blue-950'
             }`}
           >
             <span>Mes Amis</span>
@@ -177,10 +177,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 
           <button
             onClick={() => setActiveTab('received')}
-            className={`px-3 py-2 rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-2 rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'received'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-blue-100/60 dark:hover:bg-blue-950'
             }`}
           >
             <span>Demandes reçues</span>
@@ -193,10 +193,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 
           <button
             onClick={() => setActiveTab('sent')}
-            className={`px-3 py-2 rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-2 rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'sent'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-blue-100/60 dark:hover:bg-blue-950'
             }`}
           >
             <span>Envoyées</span>
@@ -207,10 +207,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 
           <button
             onClick={() => setActiveTab('search')}
-            className={`px-3 py-2 rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-2 rounded-xl transition flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'search'
-                ? 'bg-teal-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-blue-100/60 dark:hover:bg-blue-950'
             }`}
           >
             <Search className="w-3.5 h-3.5" />
@@ -227,10 +227,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
         )}
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 bg-white dark:bg-[#0c142b]">
           {loading ? (
             <div className="py-16 flex flex-col items-center justify-center text-slate-400">
-              <Loader2 className="w-6 h-6 animate-spin text-teal-500 mb-2" />
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500 mb-2" />
               <span className="text-xs font-semibold">Chargement...</span>
             </div>
           ) : (
@@ -245,14 +245,14 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                         Aucun ami pour le moment
                       </p>
                       <p className="text-[11px] text-slate-500 mt-1">
-                        Utilisez l'onglet « Trouver des amis » pour rechercher des camarades !
+                        Utilisez l'onglet « Trouver des amis » pour rechercher des membres !
                       </p>
                     </div>
                   ) : (
                     friends.map((f) => (
                       <div
                         key={f.id}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800"
+                        className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/30 dark:bg-slate-800/60 border border-blue-100 dark:border-blue-900/60"
                       >
                         <div
                           onClick={() => {
@@ -264,10 +264,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                           <img
                             src={f.avatarUrl}
                             alt={f.prenom}
-                            className="w-10 h-10 rounded-full object-cover border border-teal-500 shrink-0"
+                            className="w-10 h-10 rounded-full object-cover border border-blue-500 shrink-0"
                           />
                           <div className="min-w-0">
-                            <div className="text-xs font-black text-slate-900 dark:text-white group-hover:text-teal-600 truncate">
+                            <div className="text-xs font-black text-slate-900 dark:text-white group-hover:text-blue-600 truncate">
                               {f.prenom} {f.nom}
                             </div>
                             <div className="text-[10px] text-slate-500 truncate">{f.promo}</div>
@@ -280,14 +280,14 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                               onClose();
                               onOpenChatWithUser(f.id);
                             }}
-                            className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 hover:bg-teal-100 transition"
+                            className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition cursor-pointer"
                             title="Message direct"
                           >
                             <MessageCircle className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleRemove(f.id)}
-                            className="p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 transition"
+                            className="p-2 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 transition cursor-pointer"
                             title="Retirer des amis"
                           >
                             <UserX className="w-4 h-4" />
@@ -310,7 +310,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                     pendingReceived.map((u) => (
                       <div
                         key={u.id}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-800"
+                        className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800"
                       >
                         <div
                           onClick={() => {
@@ -322,13 +322,13 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                           <img
                             src={u.avatarUrl}
                             alt={u.prenom}
-                            className="w-10 h-10 rounded-full object-cover border border-teal-500 shrink-0"
+                            className="w-10 h-10 rounded-full object-cover border border-blue-500 shrink-0"
                           />
                           <div className="min-w-0">
-                            <div className="text-xs font-black text-slate-900 dark:text-white group-hover:text-teal-600 truncate">
+                            <div className="text-xs font-black text-slate-900 dark:text-white group-hover:text-blue-600 truncate">
                               {u.prenom} {u.nom}
                             </div>
-                            <div className="text-[10px] text-teal-700 dark:text-teal-300 font-medium truncate">
+                            <div className="text-[10px] text-blue-700 dark:text-blue-300 font-medium truncate">
                               {u.promo} souhaite se connecter
                             </div>
                           </div>
@@ -337,14 +337,14 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                         <div className="flex items-center space-x-2 shrink-0">
                           <button
                             onClick={() => handleAccept(u.id)}
-                            className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-xs"
+                            className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-xs cursor-pointer"
                           >
                             <UserCheck className="w-3.5 h-3.5" />
                             <span>Accepter</span>
                           </button>
                           <button
                             onClick={() => handleReject(u.id)}
-                            className="p-1.5 rounded-xl hover:bg-rose-100 text-slate-500 hover:text-rose-600 transition"
+                            className="p-1.5 rounded-xl hover:bg-rose-100 text-slate-500 hover:text-rose-600 transition cursor-pointer"
                             title="Refuser"
                           >
                             <UserX className="w-4 h-4" />
@@ -367,7 +367,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                     pendingSent.map((u) => (
                       <div
                         key={u.id}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800"
+                        className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/30 dark:bg-slate-800/60 border border-blue-100 dark:border-blue-900/60"
                       >
                         <div
                           onClick={() => {
@@ -408,8 +408,8 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Nom, prénom, promo, filière..."
-                      className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:border-teal-500"
+                      placeholder="Nom, prénom, catégorie..."
+                      className="w-full pl-9 pr-3 py-2.5 text-xs rounded-xl bg-blue-50/30 dark:bg-slate-800 border border-blue-200 dark:border-blue-800 text-slate-900 dark:text-white focus:outline-hidden focus:border-blue-500"
                     />
                   </div>
 
@@ -429,7 +429,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                         return (
                           <div
                             key={u.id}
-                            className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800"
+                            className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/30 dark:bg-slate-800/60 border border-blue-100 dark:border-blue-900/60"
                           >
                             <div
                               onClick={() => {
@@ -441,7 +441,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                               <img
                                 src={u.avatarUrl}
                                 alt={u.prenom}
-                                className="w-10 h-10 rounded-full object-cover border border-teal-500 shrink-0"
+                                className="w-10 h-10 rounded-full object-cover border border-blue-500 shrink-0"
                               />
                               <div className="min-w-0">
                                 <div className="text-xs font-black text-slate-900 dark:text-white truncate">
@@ -453,7 +453,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 
                             <div>
                               {isAlreadyFriend ? (
-                                <span className="text-xs font-bold text-teal-600 bg-teal-50 dark:bg-teal-950/40 px-3 py-1.5 rounded-xl">
+                                <span className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/40 px-3 py-1.5 rounded-xl border border-blue-200">
                                   Amis ✓
                                 </span>
                               ) : isSent ? (
@@ -463,14 +463,14 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
                               ) : isReceived ? (
                                 <button
                                   onClick={() => handleAccept(u.id)}
-                                  className="px-3 py-1.5 rounded-xl bg-teal-600 text-white text-xs font-bold shadow-xs"
+                                  className="px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-bold shadow-xs cursor-pointer"
                                 >
                                   Accepter
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => handleSendRequest(u.id)}
-                                  className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-xs"
+                                  className="flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition shadow-xs cursor-pointer"
                                 >
                                   <UserPlus className="w-3.5 h-3.5" />
                                   <span>Ajouter</span>

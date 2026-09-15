@@ -224,32 +224,32 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
       {/* Search & Document Explorer Toolbar */}
       <div className="mb-5 flex flex-col sm:flex-row items-center gap-2.5">
         <div className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-blue-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Rechercher par mot-clé, cours ou auteur..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#111625] border border-slate-200/80 dark:border-slate-800 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition"
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#0c142b] border border-blue-100 dark:border-blue-950 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
           />
         </div>
 
         {/* Global Document Search Button */}
         <button
           onClick={() => setShowDocSearch(true)}
-          className="w-full sm:w-auto flex items-center justify-center space-x-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl shadow-2xs transition flex-shrink-0"
+          className="w-full sm:w-auto flex items-center justify-center space-x-1.5 px-4 py-2.5 bg-blue-50/80 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800 text-xs font-bold rounded-xl shadow-xs transition flex-shrink-0 cursor-pointer"
         >
-          <Files className="w-3.5 h-3.5 text-indigo-500" />
+          <Files className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
           <span>Fichiers & Documents</span>
         </button>
 
         {selectedTagFilter && (
           <button
             onClick={() => setSelectedTagFilter(null)}
-            className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-medium rounded-xl border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition"
+            className="flex-shrink-0 flex items-center space-x-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-xl border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition cursor-pointer"
           >
-            <span>Filtre: {selectedTagFilter}</span>
-            <span className="ml-1 text-indigo-600 font-bold">×</span>
+            <span>Filtre: #{selectedTagFilter}</span>
+            <span className="ml-1 text-blue-600 font-bold">×</span>
           </button>
         )}
       </div>
@@ -258,7 +258,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
       {!currentUser.isRestricted ? (
         <PostComposer currentUser={currentUser} onPostCreated={onRefresh} />
       ) : (
-        <div className="mb-5 p-4 bg-white dark:bg-[#111625] border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl text-center text-slate-500 dark:text-slate-400 text-xs">
+        <div className="mb-5 p-4 bg-white dark:bg-[#0c142b] border border-dashed border-blue-200 dark:border-blue-900 rounded-2xl text-center text-slate-500 dark:text-slate-400 text-xs">
           🔒 Vous ne pouvez pas publier de nouveau contenu en raison de la limitation administrative en mode lecture seule.
         </div>
       )}
@@ -266,11 +266,11 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
       {/* Posts Stream */}
       <div className="space-y-5 mt-5">
         {filteredPosts.length === 0 ? (
-          <div className="text-center py-14 px-4 bg-white dark:bg-[#111625] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="w-5 h-5" />
+          <div className="text-center py-14 px-4 bg-white dark:bg-[#0c142b] rounded-2xl border border-blue-100 dark:border-blue-950 shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3">
+              <Sparkles className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-white">Aucune publication trouvée</h3>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Aucune publication trouvée</h3>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
               {searchQuery
                 ? "Aucune publication ne correspond à vos critères de recherche."
@@ -289,7 +289,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
             return (
               <article
                 key={post.id}
-                className="bg-white dark:bg-[#111625] rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden transition-all hover:border-slate-300 dark:hover:border-slate-700"
+                className="bg-white dark:bg-[#0c142b] rounded-2xl border border-blue-100/90 dark:border-blue-950 shadow-sm overflow-hidden transition-all hover:border-blue-300 dark:hover:border-blue-800"
               >
                 {/* Post Header */}
                 <div className="p-4 sm:p-5 pb-3 flex items-center justify-between">
@@ -301,15 +301,15 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                     <img
                       src={post.authorAvatar}
                       alt={post.authorName}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 group-hover:border-indigo-500 transition shrink-0"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-blue-400/40 group-hover:border-blue-600 transition shrink-0"
                       referrerPolicy="no-referrer"
                     />
                     <div>
                       <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                        <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
                           {post.authorName}
                         </span>
-                        <span className="px-2 py-0.2 rounded-full text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                           {post.authorPromo}
                         </span>
                       </div>
@@ -324,21 +324,21 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                   <div className="relative">
                     <button
                       onClick={() => setOpenMenuPostId(isMenuOpen ? null : post.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/60 transition cursor-pointer"
                     >
                       <MoreVertical className="w-4 h-4" />
                     </button>
 
                     {isMenuOpen && (
-                      <div className="absolute right-0 top-8 z-20 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1 text-xs">
+                      <div className="absolute right-0 top-8 z-20 w-48 bg-white dark:bg-[#0c142b] rounded-xl shadow-xl border border-blue-100 dark:border-blue-900 py-1 text-xs">
                         <button
                           onClick={() => {
                             setSavingPost(post);
                             setOpenMenuPostId(null);
                           }}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 transition cursor-pointer"
                         >
-                          <Bookmark className="w-3.5 h-3.5 text-indigo-500" />
+                          <Bookmark className="w-3.5 h-3.5 text-blue-600" />
                           <span>Classer dans un espace</span>
                         </button>
 
@@ -363,7 +363,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                                 setEditingPost(post);
                                 setOpenMenuPostId(null);
                               }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950 transition cursor-pointer"
                             >
                               <Edit2 className="w-3.5 h-3.5 text-blue-500" />
                               <span>
@@ -377,7 +377,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                                 setPostToDelete(post);
                                 setOpenMenuPostId(null);
                               }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-medium transition"
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-medium transition cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                               <span>
@@ -405,7 +405,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                       <button
                         key={tag}
                         onClick={() => setSelectedTagFilter(tag)}
-                        className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2.5 py-0.5 rounded-md transition"
+                        className="text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50/70 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 border border-blue-200/60 dark:border-blue-800 px-2.5 py-0.5 rounded-lg transition cursor-pointer"
                       >
                         #{tag}
                       </button>
@@ -421,22 +421,22 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                         return (
                           <div
                             key={att.id}
-                            className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-850/60 border border-slate-200/80 dark:border-slate-800 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-800 transition"
+                            className="flex items-center justify-between p-3 bg-blue-50/40 dark:bg-[#121c38]/60 border border-blue-100 dark:border-blue-900 rounded-xl hover:bg-blue-50/70 dark:hover:bg-[#121c38] transition"
                           >
                             <div className="flex items-center space-x-3 truncate pr-2">
-                              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                              <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 border border-blue-200 dark:border-blue-800">
                                 <FileText className="w-4 h-4" />
                               </div>
                               <div className="truncate">
-                                <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{att.name}</p>
-                                <p className="text-[10px] text-slate-400">Document joint</p>
+                                <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{att.name}</p>
+                                <p className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">Document joint</p>
                               </div>
                             </div>
                             <div className="flex items-center space-x-1.5 shrink-0">
                               <a
                                 href={att.url}
                                 download={att.name}
-                                className="flex items-center space-x-1 px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-medium hover:bg-slate-50 transition"
+                                className="flex items-center space-x-1 px-3 py-1.5 bg-white dark:bg-[#0c142b] border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold hover:bg-blue-50 dark:hover:bg-blue-950 transition cursor-pointer"
                               >
                                 <Download className="w-3.5 h-3.5" />
                                 <span>Télécharger</span>
@@ -460,18 +460,18 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                         return (
                           <div
                             key={att.id}
-                            className="p-3 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-xl flex flex-col space-y-2 shadow-2xs"
+                            className="p-3 bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-xl flex flex-col space-y-2 shadow-xs"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center space-x-2 text-xs font-semibold text-indigo-950 dark:text-indigo-200 truncate pr-2">
-                                <Volume2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                              <div className="flex items-center space-x-2 text-xs font-bold text-blue-950 dark:text-blue-200 truncate pr-2">
+                                <Volume2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
                                 <span className="truncate">{att.name || 'Note Vocale'}</span>
                               </div>
                               <div className="flex items-center space-x-1.5 shrink-0">
                                 <a
                                   href={att.url}
                                   download={att.name || 'note_vocale.webm'}
-                                  className="inline-flex items-center space-x-1 px-2 py-1 rounded-md text-[11px] font-medium text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100/60 dark:hover:bg-indigo-900/50 transition"
+                                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-white dark:bg-[#0c142b] border border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950 transition cursor-pointer"
                                   title="Télécharger l'enregistrement vocal"
                                 >
                                   <Download className="w-3 h-3" />
@@ -481,7 +481,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                                   <button
                                     type="button"
                                     onClick={() => setAttachmentToDelete({ post, attachment: att })}
-                                    className="inline-flex items-center space-x-1 px-2 py-1 rounded-md text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
+                                    className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
                                     title="Supprimer la note vocale"
                                   >
                                     <Trash2 className="w-3 h-3" />
@@ -502,11 +502,11 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
 
                       if (att.type === 'video') {
                         return (
-                          <div key={att.id} className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-black group">
+                          <div key={att.id} className="relative rounded-xl overflow-hidden border border-blue-100 dark:border-blue-950 bg-black group">
                             <video controls src={att.url} className="w-full max-h-96 object-contain" />
                             <div className="p-2 bg-slate-900 text-white text-xs flex items-center justify-between">
                               <div className="flex items-center space-x-2 truncate pr-2">
-                                <Film className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                                <Film className="w-3.5 h-3.5 text-blue-400 shrink-0" />
                                 <span className="truncate">{att.name}</span>
                               </div>
                               {canManage && (
@@ -527,7 +527,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
 
                       if (att.type === 'image') {
                         return (
-                          <div key={att.id} className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 group">
+                          <div key={att.id} className="relative rounded-xl overflow-hidden border border-blue-100 dark:border-blue-950 bg-slate-100 dark:bg-[#0c142b] group">
                             <img
                               src={att.url}
                               alt={att.name}
@@ -555,12 +555,12 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                 )}
 
                 {/* Engagement Bar */}
-                <div className="px-4 sm:px-5 py-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div className="px-4 sm:px-5 py-2.5 border-t border-blue-50 dark:border-blue-950 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                   <div className="flex items-center space-x-4 sm:space-x-6">
                     {/* Like button */}
                     <button
                       onClick={() => handleLike(post.id)}
-                      className={`flex items-center space-x-1.5 font-medium transition cursor-pointer ${
+                      className={`flex items-center space-x-1.5 font-bold transition cursor-pointer ${
                         hasLiked ? 'text-rose-600 dark:text-rose-400' : 'hover:text-rose-600'
                       }`}
                     >
@@ -572,7 +572,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                     {/* Comments toggle */}
                     <button
                       onClick={() => setActiveCommentsPostId(areCommentsOpen ? null : post.id)}
-                      className="flex items-center space-x-1.5 font-medium hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+                      className="flex items-center space-x-1.5 font-semibold text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-white transition cursor-pointer"
                     >
                       <MessageCircle className="w-4 h-4" />
                       <span>{post.comments?.length || 0}</span>
@@ -583,17 +583,17 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                   {/* Bookmark / Classify in space */}
                   <button
                     onClick={() => setSavingPost(post)}
-                    className="flex items-center space-x-1.5 font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                    className="flex items-center space-x-1.5 font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 px-2.5 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/60 transition cursor-pointer"
                     title="Enregistrer et classer dans un espace"
                   >
-                    <Bookmark className="w-3.5 h-3.5 text-slate-400" />
+                    <Bookmark className="w-3.5 h-3.5 text-blue-500" />
                     <span>Classer</span>
                   </button>
                 </div>
 
                 {/* Comments Section */}
                 {areCommentsOpen && (
-                  <div className="bg-slate-50/60 dark:bg-slate-950/40 p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 space-y-3.5">
+                  <div className="bg-blue-50/30 dark:bg-[#070c1e] p-4 sm:p-5 border-t border-blue-100 dark:border-blue-950 space-y-3.5">
                     {post.comments && post.comments.length > 0 ? (
                       <div className="space-y-3">
                         {/* Render Root Comments */}
@@ -608,17 +608,17 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                                   <img
                                     src={com.userAvatar}
                                     alt={com.userName}
-                                    className="w-6 h-6 rounded-full object-cover border border-slate-200 dark:border-slate-700 mt-0.5 shrink-0"
+                                    className="w-7 h-7 rounded-full object-cover border border-blue-200 dark:border-blue-800 mt-0.5 shrink-0"
                                     referrerPolicy="no-referrer"
                                   />
-                                  <div className="flex-1 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200/70 dark:border-slate-800 shadow-2xs">
+                                  <div className="flex-1 bg-white dark:bg-[#0c142b] p-3.5 rounded-xl border border-blue-100 dark:border-blue-900 shadow-xs">
                                     <div className="flex items-center justify-between mb-1">
                                       <div className="flex items-center space-x-2">
-                                        <span className="text-xs font-semibold text-slate-900 dark:text-white">
+                                        <span className="text-xs font-bold text-slate-900 dark:text-white">
                                           {com.userName}
                                         </span>
                                         {com.userPromo && (
-                                          <span className="text-[10px] text-slate-400 font-medium">
+                                          <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950 px-1.5 py-0.2 rounded">
                                             {com.userPromo}
                                           </span>
                                         )}
@@ -631,7 +631,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
 
                                     {/* Action button to reply to this comment */}
                                     {!currentUser.isRestricted && (
-                                      <div className="mt-2 pt-1 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+                                      <div className="mt-2 pt-1 border-t border-blue-50 dark:border-blue-950 flex items-center justify-between">
                                         <button
                                           type="button"
                                           onClick={() =>
@@ -641,7 +641,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                                               userName: com.userName,
                                             })
                                           }
-                                          className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center space-x-1 transition cursor-pointer"
+                                          className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center space-x-1 transition cursor-pointer"
                                         >
                                           <Reply className="w-3 h-3" />
                                           <span>Répondre</span>
@@ -658,22 +658,22 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
 
                                 {/* Nested Replies Branch */}
                                 {replies.length > 0 && (
-                                  <div className="ml-5 sm:ml-7 pl-3 border-l border-slate-200 dark:border-slate-800 space-y-2">
+                                  <div className="ml-5 sm:ml-7 pl-3 border-l-2 border-blue-200 dark:border-blue-900 space-y-2">
                                     {replies.map((reply) => (
                                       <div key={reply.id} className="flex items-start space-x-2">
                                         <img
                                           src={reply.userAvatar}
                                           alt={reply.userName}
-                                          className="w-5 h-5 rounded-full object-cover border border-slate-200 dark:border-slate-700 mt-0.5 shrink-0"
+                                          className="w-5 h-5 rounded-full object-cover border border-blue-200 dark:border-blue-800 mt-0.5 shrink-0"
                                           referrerPolicy="no-referrer"
                                         />
-                                        <div className="flex-1 bg-white/70 dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                                        <div className="flex-1 bg-white/90 dark:bg-[#0c142b]/90 p-2.5 rounded-xl border border-blue-100 dark:border-blue-900 shadow-2xs">
                                           <div className="flex items-center justify-between mb-0.5">
                                             <div className="flex items-center space-x-1.5">
-                                              <span className="text-[11px] font-semibold text-slate-900 dark:text-white">
+                                              <span className="text-[11px] font-bold text-slate-900 dark:text-white">
                                                 {reply.userName}
                                               </span>
-                                              <span className="text-[9px] text-slate-400">
+                                              <span className="text-[9px] text-blue-600 dark:text-blue-400 font-semibold">
                                                 {reply.userPromo}
                                               </span>
                                             </div>
@@ -683,7 +683,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                                           </div>
                                           <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                                             {reply.replyToUserName && (
-                                              <span className="text-indigo-600 dark:text-indigo-400 font-medium mr-1">
+                                              <span className="text-blue-600 dark:text-blue-400 font-bold mr-1">
                                                 @{reply.replyToUserName}
                                               </span>
                                             )}
@@ -702,7 +702,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                                                     userName: reply.userName,
                                                   })
                                                 }
-                                                className="text-[10px] font-medium text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center space-x-1 transition cursor-pointer"
+                                                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center space-x-1 transition cursor-pointer"
                                               >
                                                 <Reply className="w-2.5 h-2.5" />
                                                 <span>Répondre</span>
@@ -729,11 +729,11 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                       <div className="space-y-1.5">
                         {/* Replying banner indicator */}
                         {replyingTo?.postId === post.id && (
-                          <div className="flex items-center justify-between px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/80 rounded-xl text-xs text-indigo-800 dark:text-indigo-200">
+                          <div className="flex items-center justify-between px-3 py-1.5 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-blue-900 dark:text-blue-200 font-medium">
                             <div className="flex items-center space-x-1.5">
-                              <CornerDownRight className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                              <CornerDownRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                               <span>
-                                En réponse à <strong>@{replyingTo.userName}</strong>
+                                En réponse à <strong className="text-blue-600 dark:text-blue-300">@{replyingTo.userName}</strong>
                               </span>
                             </div>
                             <button
@@ -762,12 +762,12 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
                             onChange={(e) =>
                               setCommentText((prev) => ({ ...prev, [post.id]: e.target.value }))
                             }
-                            className="flex-1 px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-xl text-xs text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition"
+                            className="flex-1 px-3.5 py-2 bg-white dark:bg-[#0c142b] border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                           />
                           <button
                             type="submit"
                             disabled={submittingComment === post.id || !commentText[post.id]?.trim()}
-                            className="p-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition disabled:opacity-40 shrink-0 flex items-center justify-center cursor-pointer"
+                            className="p-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white rounded-xl shadow-sm transition disabled:opacity-40 shrink-0 flex items-center justify-center cursor-pointer"
                             title={replyingTo?.postId === post.id ? "Envoyer la réponse" : "Envoyer le commentaire"}
                           >
                             <Send className="w-3.5 h-3.5" />
@@ -790,7 +790,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
       {/* IN-APP DELETE POST CONFIRMATION MODAL (No window.confirm!) */}
       {postToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
+          <div className="w-full max-w-sm bg-white dark:bg-[#0c142b] rounded-3xl p-6 border border-blue-100 dark:border-blue-950 shadow-2xl text-center">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -805,7 +805,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
               <button
                 type="button"
                 onClick={() => setPostToDelete(null)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-200 transition"
               >
                 Annuler
               </button>
@@ -825,7 +825,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
       {/* IN-APP DELETE ATTACHMENT / VOCAL CONFIRMATION MODAL */}
       {attachmentToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
+          <div className="w-full max-w-sm bg-white dark:bg-[#0c142b] rounded-3xl p-6 border border-blue-100 dark:border-blue-950 shadow-2xl text-center">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -844,7 +844,7 @@ export const FeedView: React.FC<FeedViewProps> = ({ currentUser, posts, onRefres
               <button
                 type="button"
                 onClick={() => setAttachmentToDelete(null)}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold cursor-pointer hover:bg-slate-200 transition"
               >
                 Annuler
               </button>

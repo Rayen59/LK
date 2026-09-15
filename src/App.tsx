@@ -297,9 +297,9 @@ export default function App() {
 
   if (authChecking) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-10 w-10 border-3 border-teal-500 border-t-transparent mb-4" />
-        <p className="text-teal-400 font-bold text-sm">Pulse Social • Connexion en cours...</p>
+      <div className="min-h-screen bg-[#070d20] flex flex-col items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-500 border-t-transparent mb-4" />
+        <p className="text-blue-400 font-bold text-sm">MK • Connexion en cours...</p>
       </div>
     );
   }
@@ -321,7 +321,7 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen ${activeTab === 'chat' ? 'h-screen overflow-hidden' : ''} bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative`}>
+    <div className={`min-h-screen ${activeTab === 'chat' ? 'h-screen overflow-hidden' : ''} bg-slate-50 dark:bg-[#070d20] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative`}>
       
       {/* Fixed Top Header */}
       <Header
@@ -422,7 +422,7 @@ export default function App() {
       {/* Rock-solid Fixed Bottom Navigation Bar (Hidden only inside active chat conversation) */}
       <nav
         id="app-bottom-fixed-nav"
-        className={`fixed bottom-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0b0f19]/95 backdrop-blur-xl border-t border-slate-200/90 dark:border-slate-800 items-center justify-around py-1 sm:py-1.5 px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-all h-16 pb-[max(0.25rem,env(safe-area-inset-bottom))] ${
+        className={`fixed bottom-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0a1124]/95 backdrop-blur-xl border-t border-blue-100/90 dark:border-blue-950 items-center justify-around py-1 sm:py-1.5 px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-all h-16 pb-[max(0.25rem,env(safe-area-inset-bottom))] ${
           activeTab === 'chat' && isChatConversationOpen ? 'hidden' : 'flex'
         }`}
       >
@@ -432,8 +432,8 @@ export default function App() {
             onClick={() => navigateToTab('feed')}
             className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl ${
               activeTab === 'feed'
-                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-white'
             }`}
           >
             <Sparkles className="w-5 h-5 mb-0.5" />
@@ -463,8 +463,8 @@ export default function App() {
             onClick={() => navigateToTab('chat')}
             className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl relative ${
               activeTab === 'chat'
-                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40'
-                : 'text-slate-500 dark:text-slate-400 hover:text-indigo-500'
+                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-blue-600'
             }`}
           >
             <div className="relative">
@@ -481,12 +481,12 @@ export default function App() {
           <button
             id="bottom-nav-friends"
             onClick={() => setShowFriendsModal(true)}
-            className="flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition rounded-xl relative"
+            className="flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-blue-600 transition rounded-xl relative"
           >
             <div className="relative">
               <Users className="w-5 h-5 mb-0.5" />
               {pendingFriendRequestsCount > 0 && (
-                <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-blue-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
                   {pendingFriendRequestsCount}
                 </span>
               )}
@@ -499,15 +499,15 @@ export default function App() {
             onClick={() => navigateToTab('profile')}
             className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl ${
               activeTab === 'profile'
-                ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/40'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
+                : 'text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-white'
             }`}
           >
             <img
               src={currentUser.avatarUrl}
               alt={currentUser.prenom}
               className={`w-5 h-5 rounded-full object-cover mb-0.5 border ${
-                activeTab === 'profile' ? 'border-indigo-500' : 'border-slate-300 dark:border-slate-700'
+                activeTab === 'profile' ? 'border-blue-500' : 'border-slate-300 dark:border-slate-700'
               }`}
             />
             <span>Profil</span>
@@ -536,13 +536,13 @@ export default function App() {
 
       {/* Modern Footer (Hidden when activeTab === 'chat') */}
       {activeTab !== 'chat' && (
-        <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors mb-16">
+        <footer className="bg-white dark:bg-[#0a1124] border-t border-blue-100 dark:border-blue-950 py-6 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors mb-16">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="font-medium text-slate-700 dark:text-slate-300">
-              © {new Date().getFullYear()} Pulse Social • Réseau Social & Académique
+            <p className="font-bold text-slate-800 dark:text-slate-200">
+              © {new Date().getFullYear()} MK Social • Réseau Professionnel & Collaboratif
             </p>
-            <p className="text-slate-400 dark:text-slate-500 text-[11px]">
-              Partage de publications, Reels &lt;60s, Messagerie instantanée, Contrôle IA de tolérance & Confidentialité
+            <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+              Fil Social en direct, Messagerie instantanée, Reels courts, Quiz et Espaces de travail
             </p>
           </div>
         </footer>

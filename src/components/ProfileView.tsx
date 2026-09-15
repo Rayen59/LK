@@ -204,7 +204,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   if (loading) {
     return (
       <div className="w-full max-w-4xl mx-auto py-24 flex flex-col items-center justify-center text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-3" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
         <p className="text-sm font-semibold">Chargement du profil...</p>
       </div>
     );
@@ -217,9 +217,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="mb-4 text-left">
             <button
               onClick={onGoBack}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 font-bold text-xs shadow-2xs transition"
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-[#0c142b] border border-blue-100 dark:border-blue-900 text-slate-700 dark:text-slate-300 hover:text-blue-600 font-bold text-xs shadow-2xs transition cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4 text-indigo-500" />
+              <ArrowLeft className="w-4 h-4 text-blue-500" />
               <span>Revenir à la page précédente</span>
             </button>
           </div>
@@ -242,10 +242,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="mb-3">
           <button
             onClick={onGoBack}
-            className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-500/40 font-bold text-xs shadow-2xs transition group"
+            className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-white dark:bg-[#0c142b] border border-blue-100 dark:border-blue-900 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-400 font-bold text-xs shadow-2xs transition group cursor-pointer"
             title="Revenir à la page précédente"
           >
-            <ArrowLeft className="w-4 h-4 text-indigo-500 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-4 h-4 text-blue-500 group-hover:-translate-x-0.5 transition-transform" />
             <span>Revenir à la page précédente</span>
           </button>
         </div>
@@ -260,9 +260,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       )}
 
       {/* Main Profile Header Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden mb-6">
+      <div className="bg-white dark:bg-[#0c142b] rounded-3xl border border-blue-100 dark:border-blue-900 shadow-sm overflow-hidden mb-6">
         {/* Banner */}
-        <div className="h-36 sm:h-44 bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 relative">
+        <div className="h-36 sm:h-44 bg-gradient-to-r from-[#0a163a] via-[#0d2358] to-[#0a163a] relative">
           {user.isLocked && (
             <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-amber-300 flex items-center space-x-1.5 border border-amber-400/30">
               <Lock className="w-3.5 h-3.5" />
@@ -279,10 +279,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <img
                 src={user.avatarUrl}
                 alt={user.prenom}
-                className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-white dark:border-slate-900 shadow-xl bg-slate-800"
+                className="w-28 h-28 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-white dark:border-[#0c142b] shadow-xl bg-slate-800"
               />
               {user.role === 'admin' && (
-                <span className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black uppercase border-2 border-white dark:border-slate-900">
+                <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase border-2 border-white dark:border-[#0c142b]">
                   Admin
                 </span>
               )}
@@ -295,10 +295,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <button
                   onClick={handleToggleLock}
                   disabled={togglingLock}
-                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-2xs ${
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-2xs cursor-pointer ${
                     user.isLocked
                       ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700'
+                      : 'bg-blue-50/50 dark:bg-slate-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-700 border border-blue-200 dark:border-blue-900'
                   }`}
                   title="Modifier la visibilité de votre profil"
                 >
@@ -311,7 +311,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     </>
                   ) : (
                     <>
-                      <Unlock className="w-4 h-4 text-slate-500" />
+                      <Unlock className="w-4 h-4 text-blue-500" />
                       <span>Profil Public (Cliquer pour verrouiller)</span>
                     </>
                   )}
@@ -323,7 +323,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <button
                       onClick={handleSendFriendRequest}
                       disabled={friendActionLoading || isBlockedByMe}
-                      className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition disabled:opacity-50"
+                      className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold text-xs shadow-xs transition disabled:opacity-50 cursor-pointer"
                     >
                       <UserPlus className="w-4 h-4" />
                       <span>Ajouter en ami</span>
@@ -333,7 +333,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   {relationship === 'pending_sent' && (
                     <button
                       disabled
-                      className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold cursor-not-allowed border border-slate-200 dark:border-slate-700"
+                      className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-blue-50/40 dark:bg-slate-800 text-slate-500 text-xs font-bold cursor-not-allowed border border-blue-100 dark:border-slate-700"
                     >
                       <Clock className="w-4 h-4" />
                       <span>Invitation envoyée</span>
@@ -345,7 +345,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       <button
                         onClick={handleAcceptFriendRequest}
                         disabled={friendActionLoading}
-                        className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition"
+                        className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition cursor-pointer"
                       >
                         <UserCheck className="w-4 h-4" />
                         <span>Accepter l'invitation</span>
@@ -353,7 +353,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       <button
                         onClick={handleRejectFriendRequest}
                         disabled={friendActionLoading}
-                        className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 text-xs font-bold border border-slate-200 dark:border-slate-700"
+                        className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 text-xs font-bold border border-slate-200 dark:border-slate-700 cursor-pointer"
                         title="Refuser"
                       >
                         <UserX className="w-4 h-4" />
@@ -365,7 +365,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <button
                       onClick={handleRemoveFriend}
                       disabled={friendActionLoading}
-                      className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 text-xs font-bold hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
+                      className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition cursor-pointer"
                       title="Cliquer pour retirer des amis"
                     >
                       <UserCheck className="w-4 h-4" />
@@ -377,16 +377,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <button
                     onClick={() => onOpenChatWithUser(targetUserId)}
                     disabled={isBlockedByMe}
-                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs shadow-2xs transition"
+                    className="flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl border border-blue-200 dark:border-blue-900 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-700 dark:text-slate-300 font-bold text-xs shadow-2xs transition cursor-pointer"
                   >
-                    <MessageCircle className="w-4 h-4 text-indigo-500" />
+                    <MessageCircle className="w-4 h-4 text-blue-500" />
                     <span>Message direct</span>
                   </button>
 
                   {/* Block / Unblock */}
                   <button
                     onClick={handleToggleBlock}
-                    className={`p-2.5 rounded-2xl border transition ${
+                    className={`p-2.5 rounded-2xl border transition cursor-pointer ${
                       isBlockedByMe
                         ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 text-emerald-600'
                         : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
@@ -412,7 +412,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 </span>
               )}
             </h2>
-            <p className="text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400 mt-0.5">
+            <p className="text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400 mt-0.5">
               {user.promo || 'Étudiant'}
             </p>
             {user.bio && (
@@ -423,20 +423,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           {/* Stats Bar */}
-          <div className="grid grid-cols-3 gap-3 border-t border-slate-200 dark:border-slate-800 pt-4">
-            <div className="text-center p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/40">
+          <div className="grid grid-cols-3 gap-3 border-t border-blue-50 dark:border-blue-950 pt-4">
+            <div className="text-center p-2 rounded-2xl bg-blue-50/30 dark:bg-[#070d20]">
               <span className="block text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 {profileData.postsCount}
               </span>
               <span className="text-[11px] font-semibold text-slate-500">Publications</span>
             </div>
-            <div className="text-center p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/40">
+            <div className="text-center p-2 rounded-2xl bg-blue-50/30 dark:bg-[#070d20]">
               <span className="block text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 {profileData.reelsCount}
               </span>
               <span className="text-[11px] font-semibold text-slate-500">Reels</span>
             </div>
-            <div className="text-center p-2 rounded-2xl bg-slate-50 dark:bg-slate-800/40">
+            <div className="text-center p-2 rounded-2xl bg-blue-50/30 dark:bg-[#070d20]">
               <span className="block text-lg sm:text-xl font-black text-slate-900 dark:text-white">
                 {profileData.friendsCount}
               </span>
@@ -449,7 +449,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {/* CONTENT AREA: Check for Profile Lock Restriction */}
       {isRestrictedView ? (
         // LOCKED PROFILE SHIELD
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-12 text-center shadow-xs">
+        <div className="bg-white dark:bg-[#0c142b] border border-blue-100 dark:border-blue-900 rounded-3xl p-8 sm:p-12 text-center shadow-xs">
           <div className="w-16 h-16 rounded-3xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center mx-auto mb-4 border border-amber-200 dark:border-amber-800 shadow-2xs">
             <Lock className="w-8 h-8" />
           </div>
@@ -464,7 +464,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <button
               onClick={handleSendFriendRequest}
               disabled={friendActionLoading}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-xs transition"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold text-xs shadow-xs transition cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
               <span>Envoyer une invitation d'ami</span>
@@ -482,13 +482,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         // UNRESTRICTED VIEW: Publications & Reels Tabs
         <div>
           {/* Tabs Selector */}
-          <div className="flex items-center space-x-2 border-b border-slate-200 dark:border-slate-800 mb-6 pb-2">
+          <div className="flex items-center space-x-2 border-b border-blue-100 dark:border-blue-900 mb-6 pb-2">
             <button
               onClick={() => setActiveContentTab('posts')}
-              className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition ${
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition cursor-pointer ${
                 activeContentTab === 'posts'
-                  ? 'bg-indigo-600 text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-blue-600 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-950/50'
               }`}
             >
               <FileText className="w-4 h-4" />
@@ -497,10 +497,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
             <button
               onClick={() => setActiveContentTab('reels')}
-              className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition ${
+              className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition cursor-pointer ${
                 activeContentTab === 'reels'
-                  ? 'bg-pink-600 text-white shadow-2xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-blue-600 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-950/50'
               }`}
             >
               <Film className="w-4 h-4" />
@@ -512,21 +512,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {activeContentTab === 'posts' && (
             <div className="space-y-4">
               {posts.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6">
+                <div className="py-12 text-center text-slate-400 bg-white dark:bg-[#0c142b] rounded-3xl border border-blue-100 dark:border-blue-900 p-6">
                   <p className="text-sm font-semibold">Aucune publication pour l'instant.</p>
                 </div>
               ) : (
                 posts.map((post) => (
                   <div
                     key={post.id}
-                    className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-6 shadow-2xs"
+                    className="bg-white dark:bg-[#0c142b] rounded-3xl border border-blue-100 dark:border-blue-900/80 p-4 sm:p-6 shadow-xs"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <img
                           src={post.authorAvatar}
                           alt={post.authorName}
-                          className="w-10 h-10 rounded-full object-cover border border-indigo-500"
+                          className="w-10 h-10 rounded-full object-cover border border-blue-500"
                         />
                         <div>
                           <h4 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
@@ -543,7 +543,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       </div>
 
                       {post.category && (
-                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                           {post.category}
                         </span>
                       )}
@@ -565,9 +565,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                             href={att.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/40 border border-slate-200 dark:border-slate-700 transition"
+                            className="flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-blue-50/40 dark:bg-[#070d20] text-xs text-slate-700 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/40 border border-blue-100 dark:border-blue-900 transition"
                           >
-                            <FileText className="w-3.5 h-3.5 text-indigo-500" />
+                            <FileText className="w-3.5 h-3.5 text-blue-500" />
                             <span className="font-semibold">{att.name}</span>
                           </a>
                         ))}
@@ -575,7 +575,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     )}
 
                     {/* Post Footer Stats */}
-                    <div className="flex items-center space-x-4 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500">
+                    <div className="flex items-center space-x-4 pt-3 border-t border-blue-50 dark:border-blue-950 text-xs text-slate-500">
                       <span className="flex items-center space-x-1">
                         <ThumbsUp className="w-3.5 h-3.5" />
                         <span>{post.likes?.length || 0} mentions j'aime</span>
@@ -595,7 +595,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {activeContentTab === 'reels' && (
             <div>
               {reels.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6">
+                <div className="py-12 text-center text-slate-400 bg-white dark:bg-[#0c142b] rounded-3xl border border-blue-100 dark:border-blue-900 p-6">
                   <p className="text-sm font-semibold">Aucun Reel publié pour l'instant.</p>
                 </div>
               ) : (
@@ -620,7 +620,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                           <p className="text-[11px] text-white font-bold line-clamp-2 mb-1">
                             {reel.caption || 'Reel'}
                           </p>
-                          <div className="flex items-center space-x-2 text-[10px] text-pink-300 font-semibold">
+                          <div className="flex items-center space-x-2 text-[10px] text-blue-300 font-semibold">
                             <span className="flex items-center space-x-0.5">
                               <Heart className="w-3 h-3 fill-current" />
                               <span>{reel.likes.length}</span>

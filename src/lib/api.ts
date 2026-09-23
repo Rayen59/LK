@@ -64,6 +64,8 @@ export const api = {
       avatarUrl: string;
       promo: string;
       bio?: string;
+      isLocked?: boolean;
+      verificationCode?: string;
     }): Promise<{ user: User; token: string }> => {
       const data = await fetchWithAuth('/api/auth/register', {
         method: 'POST',
@@ -73,6 +75,55 @@ export const api = {
         setStoredToken(data.token);
       }
       return data;
+    },
+
+    sendVerificationCode: async (params: {
+      email: string;
+      purpose?: 'register' | 'reset';
+    }): Promise<{ success: boolean; message: string; previewCode: string; expiresInSeconds: number }> => {
+      return fetchWithAuth('/api/auth/send-code', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    },
+
+    verifyCode: async (params: {
+      email: string;
+      code: string;
+    }): Promise<{ success: boolean; message: string }> => {
+      return fetchWithAuth('/api/auth/verify-code', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    },
+
+    resetPassword: async (params: {
+      email: string;
+      code: string;
+      newPassword: string;
+    }): Promise<{ success: boolean; message: string }> => {
+      return fetchWithAuth('/api/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    },
+
+    getCaptchaChallenge: async (): Promise<{
+      challengeId: string;
+      targetPosition: number;
+      tolerance: number;
+    }> => {
+      return fetchWithAuth('/api/auth/captcha-challenge');
+    },
+
+    verifyCaptcha: async (params: {
+      challengeId: string;
+      userPosition: number;
+    }): Promise<{ success: boolean; message: string }> => {
+      return fetchWithAuth('/api/auth/captcha-verify', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
     },
 
     login: async (credentials: { email: string; password?: string }): Promise<{ user: User; token: string }> => {
@@ -88,6 +139,14 @@ export const api = {
 
     getMe: async (): Promise<{ user: User }> => {
       return fetchWithAuth('/api/auth/me');
+    },
+
+    deleteAccount: async (): Promise<{ success: boolean; message: string }> => {
+      const data = await fetchWithAuth('/api/auth/delete-account', {
+        method: 'POST',
+      });
+      removeStoredToken();
+      return data;
     },
 
     updateProfile: async (updates: Partial<User>): Promise<{ user: User }> => {

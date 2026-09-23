@@ -80,40 +80,6 @@ export function saveDatabase(): void {
   }
 }
 
-// Administration credentials
-export const ADMIN_EMAIL = "admin189@gmail.com";
-export const ADMIN_PASSWORD = "sfaxmed981";
-
-export function ensureAdminUser(): void {
-  const existingAdmin = db.users.find((u) => u.email.toLowerCase() === ADMIN_EMAIL);
-  if (!existingAdmin) {
-    const adminUser: User = {
-      id: "usr_admin_official",
-      nom: "Équipe",
-      prenom: "MK Admin",
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-      avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=admin189&backgroundColor=0f766e",
-      promo: "MK Team",
-      bio: "Compte d'administration officiel et de modération MK",
-      role: "admin",
-      isLocked: false,
-      friends: [],
-      friendRequestsSent: [],
-      friendRequestsReceived: [],
-      blockedUsers: [],
-      createdAt: new Date().toISOString()
-    };
-    db.users.unshift(adminUser);
-    saveDatabase();
-  } else {
-    existingAdmin.role = "admin";
-    existingAdmin.password = ADMIN_PASSWORD;
-  }
-}
-
-ensureAdminUser();
-
 // Helper to check and expire user ban status
 export function checkUserBanStatus(user: User): { isBanned: boolean; message?: string } {
   if (!user.isBanned) return { isBanned: false };

@@ -30,7 +30,7 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'restricted' | 'banned'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'restricted' | 'banned' | 'deleted_by_user'>('all');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [messageToast, setMessageToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -147,9 +147,10 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
 
     if (!matchesSearch) return false;
 
-    if (statusFilter === 'active') return !u.isBanned && !u.isRestricted;
+    if (statusFilter === 'active') return !u.isBanned && !u.isRestricted && !u.isDeletedByUser;
     if (statusFilter === 'restricted') return Boolean(u.isRestricted);
     if (statusFilter === 'banned') return Boolean(u.isBanned);
+    if (statusFilter === 'deleted_by_user') return Boolean(u.isDeletedByUser);
 
     return true;
   });
@@ -157,7 +158,8 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
   const totalUsers = users.length;
   const bannedCount = users.filter((u) => u.isBanned).length;
   const restrictedCount = users.filter((u) => u.isRestricted).length;
-  const activeCount = users.filter((u) => !u.isBanned && !u.isRestricted).length;
+  const activeCount = users.filter((u) => !u.isBanned && !u.isRestricted && !u.isDeletedByUser).length;
+  const deletedByUserCount = users.filter((u) => u.isDeletedByUser).length;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
@@ -302,6 +304,17 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
           >
             Bannis ({bannedCount})
           </button>
+
+          <button
+            onClick={() => setStatusFilter('deleted_by_user')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+              statusFilter === 'deleted_by_user'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 hover:bg-purple-100'
+            }`}
+          >
+            Supprimés par l'utilisateur ({deletedByUserCount})
+          </button>
         </div>
 
       </div>
@@ -387,7 +400,12 @@ export const AdminView: React.FC<AdminViewProps> = ({ currentUser, onGoBack }) =
 
                       {/* Status badges */}
                       <div className="flex items-center space-x-2 mt-2">
-                        {isBanned ? (
+                        {user.isDeletedByUser ? (
+                          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-800" title="Ce compte a été supprimé par l'utilisateur. Il sera automatiquement réactivé si l'utilisateur se reconnecte.">
+                            <UserX className="w-3 h-3" />
+                            <span>Compte supprimé par l'utilisateur</span>
+                          </span>
+                        ) : isBanned ? (
                           <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
                             <ShieldAlert className="w-3 h-3" />
                             <span>{banDisplay}</span>

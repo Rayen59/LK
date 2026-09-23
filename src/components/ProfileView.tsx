@@ -71,8 +71,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [togglingLock, setTogglingLock] = useState(false);
   const [friendActionLoading, setFriendActionLoading] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const isSelf = currentUser.id === targetUserId;
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await api.auth.deleteAccount();
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.message || 'Erreur lors de la suppression du compte.');
+      setDeletingAccount(false);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -291,31 +304,42 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {/* Actions (Friend, Message, Lock toggle) */}
             <div className="flex flex-wrap items-center justify-center sm:justify-end gap-2 w-full sm:w-auto">
               {isSelf ? (
-                // SELF CONTROLS: Toggle Profile Lock
-                <button
-                  onClick={handleToggleLock}
-                  disabled={togglingLock}
-                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-2xs cursor-pointer ${
-                    user.isLocked
-                      ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
-                      : 'bg-blue-50/50 dark:bg-slate-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-700 border border-blue-200 dark:border-blue-900'
-                  }`}
-                  title="Modifier la visibilité de votre profil"
-                >
-                  {togglingLock ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : user.isLocked ? (
-                    <>
-                      <Lock className="w-4 h-4 text-amber-500" />
-                      <span>Profil Verrouillé (Amis seuls)</span>
-                    </>
-                  ) : (
-                    <>
-                      <Unlock className="w-4 h-4 text-blue-500" />
-                      <span>Profil Public (Cliquer pour verrouiller)</span>
-                    </>
-                  )}
-                </button>
+                // SELF CONTROLS: Toggle Profile Lock & Supprimer compte
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleToggleLock}
+                    disabled={togglingLock}
+                    className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition shadow-2xs cursor-pointer ${
+                      user.isLocked
+                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                        : 'bg-blue-50/50 dark:bg-slate-800 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-slate-700 border border-blue-200 dark:border-blue-900'
+                    }`}
+                    title="Modifier la visibilité de votre profil"
+                  >
+                    {togglingLock ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : user.isLocked ? (
+                      <>
+                        <Lock className="w-4 h-4 text-amber-500" />
+                        <span>Profil Verrouillé</span>
+                      </>
+                    ) : (
+                      <>
+                        <Unlock className="w-4 h-4 text-blue-500" />
+                        <span>Profil Public</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="flex items-center space-x-1.5 px-3.5 py-2.5 rounded-2xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-rose-600 dark:text-rose-400 font-bold text-xs transition cursor-pointer"
+                    title="Supprimer définitivement le compte (réactivable en se reconnectant)"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Supprimer le compte</span>
+                  </button>
+                </div>
               ) : (
                 // OTHER USER CONTROLS: Add friend, Chat, Block
                 <>
@@ -638,6 +662,54 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               )}
             </div>
           )}
+        </div>
+      )}
+      {/* Modal confirmation suppression définitive du compte */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-[#0c142b] border border-rose-200 dark:border-rose-900/60 rounded-3xl p-6 sm:p-7 shadow-2xl">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-base sm:text-lg font-bold text-center text-slate-900 dark:text-white mb-2">
+              Supprimer mon compte ?
+            </h3>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 text-center leading-relaxed mb-6">
+              Votre compte sera immédiatement désactivé et vous serez déconnecté. Vos données restent conservées dans le panel d'administration sous la mention <strong className="text-purple-600 dark:text-purple-400">« Compte supprimé par l'utilisateur »</strong>.
+              <br /><br />
+              <span className="text-slate-500 dark:text-slate-400 font-medium">
+                Vous pourrez le réactiver à tout moment simplement en effectuant une nouvelle connexion avec votre email et mot de passe.
+              </span>
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deletingAccount}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/30 transition flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {deletingAccount ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Confirmer la suppression</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

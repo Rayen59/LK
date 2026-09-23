@@ -19,6 +19,8 @@ export interface User {
   banReason?: string;
   isRestricted?: boolean; // Limite aux interactions (peut voir seulement)
   restrictionReason?: string;
+  isDeletedByUser?: boolean; // Compte supprimé/désactivé par l'utilisateur (réactivable à la reconnexion)
+  deletedByUserAt?: string; // Date de suppression par l'utilisateur
   createdAt: string;
 }
 

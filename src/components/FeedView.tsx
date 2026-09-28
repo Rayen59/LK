@@ -30,9 +30,12 @@ import {
   Calendar,
   ZoomIn,
   UserPlus,
-  UserCheck,
   Clock,
-  RefreshCw
+  RefreshCw,
+  MessageSquare,
+  BookOpen,
+  BarChart3,
+  ShieldCheck
 } from 'lucide-react';
 
 interface FeedViewProps {
@@ -42,6 +45,7 @@ interface FeedViewProps {
   onOpenUserProfile?: (userId: string) => void;
   onOpenChatWithUser?: (userId: string) => void;
   onNavigateTab?: (tab: MainTabType) => void;
+  onOpenFriendsModal?: () => void;
 }
 
 type SuggestedUser = User & {
@@ -55,7 +59,8 @@ export const FeedView: React.FC<FeedViewProps> = ({
   onRefresh,
   onOpenUserProfile,
   onOpenChatWithUser,
-  onNavigateTab
+  onNavigateTab,
+  onOpenFriendsModal
 }) => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [savingPost, setSavingPost] = useState<Post | null>(null);
@@ -81,7 +86,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
   const [initialSearchQuery, setInitialSearchQuery] = useState('');
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
 
-  // Random Friend Suggestions & Incoming Requests in Home Feed (Facebook "People You May Know")
+  // Random Friend Suggestions & Incoming Requests in Home Feed
   const [friendSuggestions, setFriendSuggestions] = useState<SuggestedUser[]>([]);
   const [pendingReceived, setPendingReceived] = useState<User[]>([]);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
@@ -318,832 +323,1043 @@ export const FeedView: React.FC<FeedViewProps> = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-5">
-      {/* Toast Error Alert */}
-      {toastError && (
-        <div className="fixed top-4 right-4 z-50 px-4 py-3 bg-rose-600 text-white text-xs font-bold rounded-xl shadow-xl flex items-center space-x-2 animate-in fade-in">
-          <AlertTriangle className="w-4 h-4" />
-          <span>{toastError}</span>
-        </div>
-      )}
-
-      {/* Toast Success Alert */}
-      {toastSuccess && (
-        <div className="fixed top-4 right-4 z-50 px-4 py-3 bg-teal-600 text-white text-xs font-bold rounded-xl shadow-xl flex items-center space-x-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4" />
-          <span>{toastSuccess}</span>
-        </div>
-      )}
-
-      {/* Restriction Alert for Read-Only Users */}
-      {currentUser.isRestricted && (
-        <div className="mb-5 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex items-start space-x-3 shadow-xs">
-          <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
-              Mode Lecture Seule Activé (Décision Administrative)
-            </h4>
-            <p className="text-xs mt-0.5 leading-relaxed">
-              Vos interactions ont été limitées par l'administration de MK. Vous pouvez consulter les publications et explorer les contenus, mais la création de publications et de commentaires est restreinte.
-            </p>
+    <div className="w-full max-w-full overflow-x-hidden">
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-6 py-3 sm:py-5">
+        {/* Toast Error Alert */}
+        {toastError && (
+          <div className="fixed top-18 right-3 z-50 px-4 py-3 bg-rose-600 text-white text-xs font-bold rounded-xl shadow-xl flex items-center space-x-2 animate-fadeIn max-w-[90vw]">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span className="truncate">{toastError}</span>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* FACEBOOK-STYLE SEARCH BAR LAUNCHER (OPENS FULL-SCREEN SEARCH ON TAP) */}
-      <div className="mb-4 bg-white dark:bg-[#0f1626] rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-3 shadow-2xs">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setInitialSearchQuery('');
-              setShowFullSearch(true);
-            }}
-            className="flex-1 flex items-center space-x-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/70 dark:hover:bg-slate-800 rounded-full text-left transition cursor-pointer"
-          >
-            <Search className="w-4 h-4 text-indigo-500 shrink-0" />
-            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">
-              Rechercher personnes, événements, vidéos, documents...
-            </span>
-          </button>
+        {/* Toast Success Alert */}
+        {toastSuccess && (
+          <div className="fixed top-18 right-3 z-50 px-4 py-3 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-xl flex items-center space-x-2 animate-fadeIn max-w-[90vw]">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="truncate">{toastSuccess}</span>
+          </div>
+        )}
 
-          {selectedTagFilter && (
-            <button
-              onClick={() => setSelectedTagFilter(null)}
-              className="shrink-0 flex items-center space-x-1 px-3 py-2 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-full border border-indigo-200 dark:border-indigo-800"
+        {/* Fixed 3-Column Layout on Desktop, Clean Locked Single Column on Mobile */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full min-w-0">
+          
+          {/* LEFT SIDEBAR (Desktop Only): Profile Card & Quick Navigation */}
+          <aside className="hidden lg:block lg:col-span-3 sticky top-4 space-y-3 min-w-0">
+            {/* User Card */}
+            <div
+              onClick={() => onNavigateTab?.('profile')}
+              className="p-3.5 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:border-blue-400 transition cursor-pointer flex items-center space-x-3"
             >
-              <span>#{selectedTagFilter}</span>
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Quick Full-Screen Search Shortcuts */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-2.5 mt-2.5 border-t border-slate-100 dark:border-slate-800/80 text-xs no-scrollbar">
-          <button
-            onClick={() => setShowFullSearch(true)}
-            className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 text-slate-700 dark:text-slate-300 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
-          >
-            <Users className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Personnes</span>
-          </button>
-          <button
-            onClick={() => setShowFullSearch(true)}
-            className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-slate-700 dark:text-slate-300 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
-          >
-            <Calendar className="w-3.5 h-3.5 text-amber-500" />
-            <span>Événements</span>
-          </button>
-          <button
-            onClick={() => setShowFullSearch(true)}
-            className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-700 dark:text-slate-300 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
-          >
-            <Film className="w-3.5 h-3.5 text-rose-500" />
-            <span>Vidéos & Reels</span>
-          </button>
-          <button
-            onClick={() => setShowFullSearch(true)}
-            className="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 hover:bg-teal-50 dark:hover:bg-teal-950/50 text-slate-700 dark:text-slate-300 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
-          >
-            <FileText className="w-3.5 h-3.5 text-teal-500" />
-            <span>Documents</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Publication Composer */}
-      {!currentUser.isRestricted ? (
-        <PostComposer currentUser={currentUser} onPostCreated={onRefresh} />
-      ) : (
-        <div className="mb-5 p-4 bg-white dark:bg-[#0f1626] border border-dashed border-blue-200 dark:border-blue-900 rounded-2xl text-center text-slate-500 dark:text-slate-400 text-xs">
-          🔒 Vous ne pouvez pas publier de nouveau contenu en raison de la limitation administrative en mode lecture seule.
-        </div>
-      )}
-
-      {/* FACEBOOK-STYLE RANDOM FRIEND REQUESTS & SUGGESTIONS WIDGET IN HOME FEED */}
-      {(pendingReceived.length > 0 || visibleSuggestions.length > 0) && (
-        <div className="mt-5 mb-5 bg-white dark:bg-[#0f1626] rounded-2xl border border-slate-200/90 dark:border-slate-800/90 p-4 shadow-2xs space-y-4">
-          {/* 1. Pending Friend Requests Received (if any) */}
-          {pendingReceived.length > 0 && (
-            <div className="space-y-2.5 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white flex items-center space-x-2">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                  <span>Invitations d'amis reçues ({pendingReceived.length})</span>
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {pendingReceived.map((reqUser) => (
-                  <div
-                    key={reqUser.id}
-                    className="p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-800/60 flex items-center justify-between gap-2.5"
-                  >
-                    <div
-                      onClick={() => onOpenUserProfile?.(reqUser.id)}
-                      className="flex items-center space-x-2.5 min-w-0 cursor-pointer"
-                    >
-                      <img
-                        src={reqUser.avatarUrl}
-                        alt={reqUser.prenom}
-                        className="w-11 h-11 rounded-full object-cover border border-indigo-300 dark:border-indigo-700 shrink-0"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div className="min-w-0">
-                        <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                          {reqUser.prenom} {reqUser.nom}
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                          {reqUser.promo || 'Membre MK'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-1.5 shrink-0">
-                      <button
-                        disabled={busyFriendUserId === reqUser.id}
-                        onClick={() => handleAcceptIncomingRequest(reqUser)}
-                        className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition cursor-pointer"
-                      >
-                        Confirmer
-                      </button>
-                      <button
-                        disabled={busyFriendUserId === reqUser.id}
-                        onClick={() => handleRejectIncomingRequest(reqUser)}
-                        className="px-2.5 py-1.5 rounded-xl bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer"
-                      >
-                        Suppr.
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <img
+                src={currentUser.avatarUrl}
+                alt={currentUser.prenom}
+                className="w-11 h-11 rounded-full object-cover border-2 border-blue-500 shrink-0"
+                referrerPolicy="no-referrer"
+              />
+              <div className="min-w-0">
+                <div className="text-sm font-extrabold text-slate-900 dark:text-white truncate flex items-center space-x-1">
+                  <span className="truncate">
+                    {currentUser.prenom} {currentUser.nom}
+                  </span>
+                  <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
+                </div>
+                <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold truncate">
+                  {currentUser.promo || 'Membre MK'}
+                </div>
               </div>
             </div>
-          )}
 
-          {/* 2. Random Friend Suggestions Carousel ("Vous connaissez peut-être") */}
-          {visibleSuggestions.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-                    <UserPlus className="w-4 h-4" />
+            {/* Quick Menu Links */}
+            <div className="p-2.5 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-1">
+              <div className="px-2.5 py-1.5 text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Raccourcis Accueil
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onOpenFriendsModal?.()}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                <span className="flex items-center space-x-2.5">
+                  <Users className="w-4 h-4 text-indigo-500" />
+                  <span>Amis & Invitations</span>
+                </span>
+                {pendingReceived.length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-extrabold">
+                    {pendingReceived.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.('chat')}
+                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4 text-emerald-500" />
+                <span>Messagerie Directe</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.('reels')}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                <span className="flex items-center space-x-2.5">
+                  <Film className="w-4 h-4 text-rose-500" />
+                  <span>Reels Vidéo</span>
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-300">
+                  &lt;60s
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.('forums')}
+                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                <MessageSquare className="w-4 h-4 text-violet-500" />
+                <span>Communautés & Salons</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.('quizzes')}
+                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 text-amber-500" />
+                <span>Quiz & Défis QCM</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.('polls')}
+                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                <BarChart3 className="w-4 h-4 text-teal-500" />
+                <span>Sondages</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.('spaces')}
+                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                <Bookmark className="w-4 h-4 text-sky-500" />
+                <span>Mes Espaces Enregistrés</span>
+              </button>
+            </div>
+          </aside>
+
+          {/* CENTER FEED COLUMN: Strictly locked width (min-w-0 w-full overflow-hidden) */}
+          <div className="col-span-1 lg:col-span-6 min-w-0 w-full max-w-full overflow-hidden">
+            
+            {/* Restriction Alert for Read-Only Users */}
+            {currentUser.isRestricted && (
+              <div className="mb-3.5 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex items-start space-x-3 shadow-2xs">
+                <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                    Mode Lecture Seule Activé
+                  </h4>
+                  <p className="text-xs mt-0.5 leading-relaxed">
+                    Vos interactions ont été limitées par l'administration.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* 1. COMPACT SEARCH BAR & QUICK FILTERS */}
+            <div className="mb-3.5 bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs w-full min-w-0 overflow-hidden">
+              <div className="flex items-center gap-2 w-full min-w-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInitialSearchQuery('');
+                    setShowFullSearch(true);
+                  }}
+                  className="flex-1 min-w-0 flex items-center space-x-2.5 px-3.5 py-2 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/70 dark:hover:bg-slate-800 rounded-full text-left transition cursor-pointer"
+                >
+                  <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">
+                    Rechercher personnes, événements, vidéos, cours...
+                  </span>
+                </button>
+
+                {selectedTagFilter && (
+                  <button
+                    onClick={() => setSelectedTagFilter(null)}
+                    className="shrink-0 flex items-center space-x-1 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-full border border-blue-200 dark:border-blue-800"
+                  >
+                    <span>#{selectedTagFilter}</span>
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Quick Filter Shortcuts — strictly contained */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 mt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs w-full">
+                <button
+                  type="button"
+                  onClick={() => setShowFullSearch(true)}
+                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-700 dark:text-slate-200 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
+                >
+                  <Users className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Personnes</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFullSearch(true)}
+                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-slate-700 dark:text-slate-200 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Événements</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFullSearch(true)}
+                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-700 dark:text-slate-200 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
+                >
+                  <Film className="w-3.5 h-3.5 text-rose-500" />
+                  <span>Vidéos</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFullSearch(true)}
+                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950/50 text-slate-700 dark:text-slate-200 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
+                >
+                  <FileText className="w-3.5 h-3.5 text-teal-500" />
+                  <span>Documents</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. COMPACT POST COMPOSER ("Quoi de neuf ?") */}
+            {!currentUser.isRestricted ? (
+              <PostComposer currentUser={currentUser} onPostCreated={onRefresh} />
+            ) : (
+              <div className="mb-3.5 p-3.5 bg-white dark:bg-[#0f172a] border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl text-center text-slate-500 dark:text-slate-400 text-xs">
+                🔒 Publication désactivée en mode lecture seule.
+              </div>
+            )}
+
+            {/* 3. MOBILE/TABLET FRIEND INVITATIONS & SUGGESTIONS (Compact & Strictly Contained) */}
+            {(pendingReceived.length > 0 || visibleSuggestions.length > 0) && (
+              <div className="lg:hidden mb-3.5 bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 shadow-2xs space-y-3 w-full min-w-0 overflow-hidden">
+                {pendingReceived.length > 0 && (
+                  <div className="space-y-2 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                    <div className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                      <span>Invitations reçues ({pendingReceived.length})</span>
+                    </div>
+                    {pendingReceived.map((reqUser) => (
+                      <div
+                        key={reqUser.id}
+                        className="p-2.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/60 flex items-center justify-between gap-2 min-w-0"
+                      >
+                        <div
+                          onClick={() => onOpenUserProfile?.(reqUser.id)}
+                          className="flex items-center space-x-2 min-w-0 cursor-pointer"
+                        >
+                          <img
+                            src={reqUser.avatarUrl}
+                            alt={reqUser.prenom}
+                            className="w-9 h-9 rounded-full object-cover shrink-0"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              {reqUser.prenom} {reqUser.nom}
+                            </div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                              {reqUser.promo || 'Membre'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-1 shrink-0">
+                          <button
+                            disabled={busyFriendUserId === reqUser.id}
+                            onClick={() => handleAcceptIncomingRequest(reqUser)}
+                            className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-[11px] font-bold cursor-pointer"
+                          >
+                            Confirmer
+                          </button>
+                          <button
+                            disabled={busyFriendUserId === reqUser.id}
+                            onClick={() => handleRejectIncomingRequest(reqUser)}
+                            className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold cursor-pointer"
+                          >
+                            Suppr.
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                      Personnes que vous connaissez peut-être
-                    </h3>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Suggestions d'amis aléatoires sur MK
-                    </p>
+                )}
+
+                {visibleSuggestions.length > 0 && (
+                  <div className="space-y-2 w-full min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                        <UserPlus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        <span>Suggestions d'amis</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDismissedIds(new Set());
+                          loadHomeFriendSuggestions(true);
+                        }}
+                        className="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold flex items-center space-x-1 cursor-pointer"
+                      >
+                        <RefreshCw
+                          className={`w-3 h-3 ${loadingSuggestions ? 'animate-spin' : ''}`}
+                        />
+                        <span>Mélanger</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-stretch gap-2.5 overflow-x-auto no-scrollbar pb-1 w-full">
+                      {visibleSuggestions.slice(0, 8).map((u) => {
+                        const isBusy = busyFriendUserId === u.id;
+                        return (
+                          <div
+                            key={u.id}
+                            className="w-34 shrink-0 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-200/80 dark:border-slate-800 p-2.5 flex flex-col justify-between relative"
+                          >
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDismissedIds((prev) => {
+                                  const next = new Set(prev);
+                                  next.add(u.id);
+                                  return next;
+                                })
+                              }
+                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center"
+                              title="Retirer"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+
+                            <div
+                              onClick={() => onOpenUserProfile?.(u.id)}
+                              className="flex flex-col items-center text-center cursor-pointer pt-1"
+                            >
+                              <img
+                                src={u.avatarUrl}
+                                alt={u.prenom}
+                                className="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-slate-700 mb-1.5"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="text-xs font-bold text-slate-900 dark:text-white truncate w-full">
+                                {u.prenom} {u.nom}
+                              </div>
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate w-full">
+                                {u.promo || 'Membre'}
+                              </div>
+                            </div>
+
+                            <div className="mt-2 pt-1">
+                              {u.isPendingSent ? (
+                                <button
+                                  type="button"
+                                  disabled={isBusy}
+                                  onClick={() => handleCancelFriendRequest(u)}
+                                  className="w-full py-1.5 px-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                                >
+                                  <Clock className="w-3 h-3 shrink-0" />
+                                  <span>Envoyée</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  disabled={isBusy}
+                                  onClick={() => handleSendFriendRequest(u)}
+                                  className="w-full py-1.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold flex items-center justify-center space-x-1 cursor-pointer"
+                                >
+                                  <UserPlus className="w-3 h-3 shrink-0" />
+                                  <span>Ajouter</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* 4. POSTS STREAM */}
+            <div className="space-y-3.5 w-full min-w-0">
+              {filteredPosts.length === 0 ? (
+                <div className="text-center py-12 px-4 bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                    Aucune publication trouvée
+                  </h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
+                    Soyez le premier à partager une publication avec la communauté !
+                  </p>
+                </div>
+              ) : (
+                filteredPosts.map((post) => {
+                  const isAuthor = post.authorId === currentUser.id;
+                  const isAdmin = currentUser.role === 'admin';
+                  const canManage = isAuthor || isAdmin;
+                  const isMenuOpen = openMenuPostId === post.id;
+                  const hasLiked = post.likes.includes(currentUser.id);
+                  const areCommentsOpen = activeCommentsPostId === post.id;
+
+                  return (
+                    <article
+                      key={post.id}
+                      className="w-full min-w-0 bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs overflow-hidden transition-all"
+                    >
+                      {/* Post Header */}
+                      <div className="p-3.5 sm:p-4 pb-2.5 flex items-center justify-between gap-2">
+                        <div
+                          className="flex items-center space-x-2.5 cursor-pointer group min-w-0"
+                          onClick={() => onOpenUserProfile && onOpenUserProfile(post.authorId)}
+                          title="Voir le profil de cet utilisateur"
+                        >
+                          <img
+                            src={post.authorAvatar}
+                            alt={post.authorName}
+                            className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 group-hover:border-blue-500 transition shrink-0"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="min-w-0">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition truncate">
+                                {post.authorName}
+                              </span>
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
+                                · {post.authorPromo}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 block">
+                              {formatDate(post.createdAt)}
+                              {post.updatedAt && <span className="ml-1 italic">(modifié)</span>}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Actions dropdown */}
+                        <div className="relative shrink-0">
+                          <button
+                            onClick={() => setOpenMenuPostId(isMenuOpen ? null : post.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+
+                          {isMenuOpen && (
+                            <div className="absolute right-0 top-8 z-20 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1 text-xs">
+                              <button
+                                onClick={() => {
+                                  setSavingPost(post);
+                                  setOpenMenuPostId(null);
+                                }}
+                                className="w-full flex items-center space-x-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                              >
+                                <Bookmark className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Classer dans un espace</span>
+                              </button>
+
+                              {canManage && (
+                                <>
+                                  {post.attachments?.some((a) => a.type === 'audio') && (
+                                    <button
+                                      onClick={() => {
+                                        const audioAtt = post.attachments?.find(
+                                          (a) => a.type === 'audio'
+                                        );
+                                        if (audioAtt)
+                                          setAttachmentToDelete({ post, attachment: audioAtt });
+                                        setOpenMenuPostId(null);
+                                      }}
+                                      className="w-full flex items-center space-x-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-medium transition"
+                                    >
+                                      <Volume2 className="w-3.5 h-3.5 text-rose-500" />
+                                      <span>Supprimer le vocal</span>
+                                    </button>
+                                  )}
+
+                                  <button
+                                    onClick={() => {
+                                      setEditingPost(post);
+                                      setOpenMenuPostId(null);
+                                    }}
+                                    className="w-full flex items-center space-x-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5 text-blue-500" />
+                                    <span>
+                                      {isAuthor ? 'Modifier la publication' : 'Modifier (Admin)'}
+                                    </span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      setPostToDelete(post);
+                                      setOpenMenuPostId(null);
+                                    }}
+                                    className="w-full flex items-center space-x-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-medium transition cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                                    <span>
+                                      {isAuthor ? 'Supprimer le post' : 'Supprimer (Modération)'}
+                                    </span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Post Content Text */}
+                      {post.content && (
+                        <div className="px-3.5 sm:px-4 py-1.5 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                          {post.content}
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      {post.tags && post.tags.length > 0 && (
+                        <div className="px-3.5 sm:px-4 py-1 flex flex-wrap gap-1.5">
+                          {post.tags.map((tag) => (
+                            <button
+                              key={tag}
+                              onClick={() => setSelectedTagFilter(tag)}
+                              className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                            >
+                              #{tag}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Attachments Section */}
+                      {post.attachments && post.attachments.length > 0 && (
+                        <div className="px-3.5 sm:px-4 py-2 space-y-2">
+                          {post.attachments.map((att) => {
+                            if (att.type === 'document') {
+                              return (
+                                <div
+                                  key={att.id}
+                                  className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl transition min-w-0"
+                                >
+                                  <div className="flex items-center space-x-2.5 truncate pr-2 min-w-0">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                      <FileText className="w-4 h-4" />
+                                    </div>
+                                    <div className="truncate min-w-0">
+                                      <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
+                                        {att.name}
+                                      </p>
+                                      <p className="text-[10px] text-slate-500 font-medium">
+                                        Document joint
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-1 shrink-0">
+                                    <a
+                                      href={att.url}
+                                      download={att.name}
+                                      className="flex items-center space-x-1 px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-100 transition cursor-pointer"
+                                    >
+                                      <Download className="w-3.5 h-3.5" />
+                                      <span className="hidden sm:inline">Télécharger</span>
+                                    </a>
+                                    {canManage && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setAttachmentToDelete({ post, attachment: att })
+                                        }
+                                        className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
+                                        title="Supprimer ce document"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (att.type === 'audio') {
+                              return (
+                                <div
+                                  key={att.id}
+                                  className="p-2.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col space-y-2"
+                                >
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center space-x-2 text-xs font-bold text-slate-800 dark:text-slate-200 truncate pr-2">
+                                      <Volume2 className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                                      <span className="truncate">{att.name || 'Note Vocale'}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1 shrink-0">
+                                      <a
+                                        href={att.url}
+                                        download={att.name || 'note_vocale.webm'}
+                                        className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                                      >
+                                        <Download className="w-3 h-3" />
+                                      </a>
+                                      {canManage && (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setAttachmentToDelete({ post, attachment: att })
+                                          }
+                                          className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 transition cursor-pointer"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <audio
+                                    controls
+                                    preload="metadata"
+                                    src={att.url}
+                                    className="w-full h-9 rounded-lg"
+                                  />
+                                </div>
+                              );
+                            }
+
+                            if (att.type === 'video') {
+                              return (
+                                <div
+                                  key={att.id}
+                                  className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-black group"
+                                >
+                                  <video
+                                    controls
+                                    src={att.url}
+                                    className="w-full max-h-96 object-contain"
+                                  />
+                                  <div className="p-2 bg-slate-900 text-white text-xs flex items-center justify-between">
+                                    <div className="flex items-center space-x-2 truncate pr-2">
+                                      <Film className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                      <span className="truncate">{att.name}</span>
+                                    </div>
+                                    {canManage && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setAttachmentToDelete({ post, attachment: att })
+                                        }
+                                        className="text-rose-400 hover:text-rose-300 text-xs font-medium flex items-center space-x-1 px-2 py-0.5 rounded hover:bg-rose-950 transition cursor-pointer shrink-0"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <span>Suppr.</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (att.type === 'image') {
+                              return (
+                                <div
+                                  key={att.id}
+                                  onClick={() =>
+                                    setLightboxImage({ url: att.url, name: att.name })
+                                  }
+                                  className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 group cursor-zoom-in"
+                                >
+                                  <img
+                                    src={att.url}
+                                    alt={att.name}
+                                    className="w-full max-h-96 object-cover group-hover:scale-[1.01] transition-transform"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <div className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/60 text-white text-[11px] font-medium flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition backdrop-blur-xs">
+                                    <ZoomIn className="w-3 h-3" />
+                                    <span>Agrandir</span>
+                                  </div>
+                                  {canManage && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAttachmentToDelete({ post, attachment: att });
+                                      }}
+                                      className="absolute top-2.5 right-2.5 px-2 py-1 bg-slate-900/80 hover:bg-rose-600 text-white rounded-lg text-xs font-medium flex items-center space-x-1 shadow-md transition cursor-pointer backdrop-blur-xs"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          })}
+                        </div>
+                      )}
+
+                      {/* Engagement Bar */}
+                      <div className="px-3.5 sm:px-4 py-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                        <div className="flex items-center space-x-4 sm:space-x-6">
+                          <button
+                            onClick={() => handleLike(post.id)}
+                            className={`flex items-center space-x-1.5 font-bold transition cursor-pointer ${
+                              hasLiked ? 'text-rose-600 dark:text-rose-400' : 'hover:text-rose-600'
+                            }`}
+                          >
+                            <Heart
+                              className={`w-4 h-4 ${
+                                hasLiked ? 'fill-current text-rose-600 dark:text-rose-400' : ''
+                              }`}
+                            />
+                            <span>{post.likes.length}</span>
+                            <span>J'aime</span>
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              setActiveCommentsPostId(areCommentsOpen ? null : post.id)
+                            }
+                            className="flex items-center space-x-1.5 font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white transition cursor-pointer"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            <span>{post.comments?.length || 0}</span>
+                            <span>Commentaires</span>
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => setSavingPost(post)}
+                          className="flex items-center space-x-1 font-semibold text-slate-600 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-300 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                        >
+                          <Bookmark className="w-3.5 h-3.5" />
+                          <span>Classer</span>
+                        </button>
+                      </div>
+
+                      {/* Comments Section */}
+                      {areCommentsOpen && (
+                        <div className="bg-slate-50/70 dark:bg-[#090f1f] p-3.5 sm:p-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                          {post.comments && post.comments.length > 0 ? (
+                            <div className="space-y-2.5">
+                              {(post.comments || [])
+                                .filter((c) => !c.parentId)
+                                .map((com) => {
+                                  const replies = (post.comments || []).filter(
+                                    (r) => r.parentId === com.id
+                                  );
+                                  return (
+                                    <div key={com.id} className="space-y-2">
+                                      <div className="flex items-start space-x-2">
+                                        <img
+                                          src={com.userAvatar}
+                                          alt={com.userName}
+                                          className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 mt-0.5 shrink-0"
+                                          referrerPolicy="no-referrer"
+                                        />
+                                        <div className="flex-1 min-w-0 bg-white dark:bg-[#0f172a] p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                                          <div className="flex items-center justify-between mb-1 gap-2">
+                                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                              {com.userName}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 shrink-0">
+                                              {formatDate(com.createdAt)}
+                                            </span>
+                                          </div>
+                                          <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap break-words">
+                                            {com.content}
+                                          </p>
+
+                                          {!currentUser.isRestricted && (
+                                            <div className="mt-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  setReplyingTo({
+                                                    postId: post.id,
+                                                    commentId: com.id,
+                                                    userName: com.userName
+                                                  })
+                                                }
+                                                className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center space-x-1 transition cursor-pointer"
+                                              >
+                                                <Reply className="w-3 h-3" />
+                                                <span>Répondre</span>
+                                              </button>
+                                              {replies.length > 0 && (
+                                                <span className="text-[10px] text-slate-400">
+                                                  {replies.length} réponse
+                                                  {replies.length > 1 ? 's' : ''}
+                                                </span>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {replies.length > 0 && (
+                                        <div className="ml-5 pl-2.5 border-l-2 border-slate-200 dark:border-slate-800 space-y-2">
+                                          {replies.map((reply) => (
+                                            <div
+                                              key={reply.id}
+                                              className="flex items-start space-x-2"
+                                            >
+                                              <img
+                                                src={reply.userAvatar}
+                                                alt={reply.userName}
+                                                className="w-5 h-5 rounded-full object-cover border border-slate-200 dark:border-slate-700 mt-0.5 shrink-0"
+                                                referrerPolicy="no-referrer"
+                                              />
+                                              <div className="flex-1 min-w-0 bg-white/90 dark:bg-[#0f172a]/90 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+                                                <div className="flex items-center justify-between mb-0.5">
+                                                  <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                                                    {reply.userName}
+                                                  </span>
+                                                  <span className="text-[9px] text-slate-400 shrink-0">
+                                                    {formatDate(reply.createdAt)}
+                                                  </span>
+                                                </div>
+                                                <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap break-words">
+                                                  {reply.replyToUserName && (
+                                                    <span className="text-blue-600 dark:text-blue-400 font-bold mr-1">
+                                                      @{reply.replyToUserName}
+                                                    </span>
+                                                  )}
+                                                  {reply.content}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400 text-center py-1">
+                              Aucun commentaire. Soyez le premier à réagir !
+                            </p>
+                          )}
+
+                          {!currentUser.isRestricted ? (
+                            <div className="space-y-1.5">
+                              {replyingTo?.postId === post.id && (
+                                <div className="flex items-center justify-between px-3 py-1.5 bg-blue-50 dark:bg-blue-950/80 border border-blue-200 dark:border-blue-900 rounded-xl text-xs text-blue-900 dark:text-blue-200 font-medium">
+                                  <div className="flex items-center space-x-1.5 truncate">
+                                    <CornerDownRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                                    <span className="truncate">
+                                      En réponse à <strong>@{replyingTo.userName}</strong>
+                                    </span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setReplyingTo(null)}
+                                    className="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer shrink-0"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+
+                              <form
+                                onSubmit={(e) => handleCommentSubmit(post.id, e)}
+                                className="flex items-center space-x-2"
+                              >
+                                <input
+                                  type="text"
+                                  placeholder={
+                                    replyingTo?.postId === post.id
+                                      ? `Répondre à @${replyingTo.userName}...`
+                                      : 'Écrire un commentaire...'
+                                  }
+                                  value={commentText[post.id] || ''}
+                                  onChange={(e) =>
+                                    setCommentText((prev) => ({
+                                      ...prev,
+                                      [post.id]: e.target.value
+                                    }))
+                                  }
+                                  className="flex-1 min-w-0 px-3 py-2 bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-500 transition"
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={
+                                    submittingComment === post.id || !commentText[post.id]?.trim()
+                                  }
+                                  className="p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-2xs transition disabled:opacity-40 shrink-0 flex items-center justify-center cursor-pointer"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                </button>
+                              </form>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-slate-400 italic text-center py-1">
+                              🔒 Commentaire désactivé
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT SIDEBAR (Desktop Only): Invitations & Friend Suggestions */}
+          <aside className="hidden lg:block lg:col-span-3 sticky top-4 space-y-4 min-w-0">
+            {/* Pending Received Requests */}
+            {pendingReceived.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span>Invitations reçues ({pendingReceived.length})</span>
+                  </span>
                 </div>
 
+                <div className="space-y-2">
+                  {pendingReceived.map((reqUser) => (
+                    <div
+                      key={reqUser.id}
+                      className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-800 space-y-2"
+                    >
+                      <div
+                        onClick={() => onOpenUserProfile?.(reqUser.id)}
+                        className="flex items-center space-x-2.5 cursor-pointer"
+                      >
+                        <img
+                          src={reqUser.avatarUrl}
+                          alt={reqUser.prenom}
+                          className="w-9 h-9 rounded-full object-cover shrink-0"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {reqUser.prenom} {reqUser.nom}
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            {reqUser.promo || 'Membre MK'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          disabled={busyFriendUserId === reqUser.id}
+                          onClick={() => handleAcceptIncomingRequest(reqUser)}
+                          className="flex-1 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold transition cursor-pointer"
+                        >
+                          Confirmer
+                        </button>
+                        <button
+                          disabled={busyFriendUserId === reqUser.id}
+                          onClick={() => handleRejectIncomingRequest(reqUser)}
+                          className="flex-1 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-semibold transition cursor-pointer"
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Suggestions d'amis */}
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white flex items-center space-x-1.5">
+                  <UserPlus className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                  <span>Suggestions d'amis</span>
+                </span>
                 <button
                   type="button"
                   onClick={() => {
                     setDismissedIds(new Set());
                     loadHomeFriendSuggestions(true);
                   }}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer"
-                  title="Afficher d'autres personnes aléatoirement"
+                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer"
+                  title="Mélanger les suggestions"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loadingSuggestions ? 'animate-spin' : ''}`} />
-                  <span className="hidden sm:inline">Mélanger</span>
                 </button>
               </div>
 
-              {/* Horizontal Scrollable Cards like Facebook Mobile */}
-              <div className="flex items-stretch gap-3 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
-                {visibleSuggestions.slice(0, 10).map((u) => {
-                  const isBusy = busyFriendUserId === u.id;
-                  return (
-                    <div
-                      key={u.id}
-                      className="w-44 sm:w-48 shrink-0 bg-slate-50/90 dark:bg-slate-900/90 rounded-2xl border border-slate-200/85 dark:border-slate-800 overflow-hidden flex flex-col justify-between relative group transition hover:border-indigo-400/70"
-                    >
-                      {/* Dismiss X button */}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDismissedIds((prev) => {
-                            const next = new Set(prev);
-                            next.add(u.id);
-                            return next;
-                          })
-                        }
-                        className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-xs transition cursor-pointer"
-                        title="Retirer cette suggestion"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-
-                      {/* Card Top Image / Avatar */}
+              {visibleSuggestions.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">
+                  Aucune nouvelle suggestion pour le moment.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {visibleSuggestions.slice(0, 5).map((u) => {
+                    const isBusy = busyFriendUserId === u.id;
+                    return (
                       <div
-                        onClick={() => onOpenUserProfile?.(u.id)}
-                        className="cursor-pointer"
+                        key={u.id}
+                        className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition"
                       >
-                        <div className="h-32 w-full bg-slate-200 dark:bg-slate-800 overflow-hidden relative">
+                        <div
+                          onClick={() => onOpenUserProfile?.(u.id)}
+                          className="flex items-center space-x-2.5 min-w-0 cursor-pointer"
+                        >
                           <img
                             src={u.avatarUrl}
                             alt={u.prenom}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
                             referrerPolicy="no-referrer"
                           />
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-900 dark:text-white truncate hover:text-blue-600">
+                              {u.prenom} {u.nom}
+                            </div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                              {u.promo || 'Membre MK'}
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="p-3 pb-2">
-                          <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
-                            {u.prenom} {u.nom}
-                          </div>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                            {u.promo || 'Membre MK'}
-                          </div>
-                          <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">
-                            {u.mutualFriendsCount && u.mutualFriendsCount > 0
-                              ? `${u.mutualFriendsCount} ami(s) en commun`
-                              : 'Membre de la communauté'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="p-3 pt-1 flex items-center gap-1.5">
-                        {u.isPendingSent ? (
-                          <button
-                            type="button"
-                            disabled={isBusy}
-                            onClick={() => handleCancelFriendRequest(u)}
-                            className="flex-1 py-2 px-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-700 dark:text-slate-300 hover:text-rose-600 text-xs font-bold flex items-center justify-center space-x-1 transition cursor-pointer"
-                          >
-                            <Clock className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">Envoyée</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={isBusy}
-                            onClick={() => handleSendFriendRequest(u)}
-                            className="flex-1 py-2 px-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center space-x-1 shadow-2xs transition cursor-pointer"
-                          >
-                            <UserPlus className="w-3.5 h-3.5 shrink-0" />
-                            <span className="truncate">Ajouter</span>
-                          </button>
-                        )}
-
-                        {onOpenChatWithUser && (
-                          <button
-                            type="button"
-                            onClick={() => onOpenChatWithUser(u.id)}
-                            className="p-2 rounded-xl bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition shrink-0 cursor-pointer"
-                            title="Envoyer un message"
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Posts Stream */}
-      <div className="space-y-5 mt-5">
-        {filteredPosts.length === 0 ? (
-          <div className="text-center py-14 px-4 bg-white dark:bg-[#0f1626] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-              Aucune publication trouvée
-            </h3>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-sm mx-auto">
-              Soyez le premier à partager une réflexion, un événement, une photo, une vidéo ou un vocal avec la communauté !
-            </p>
-          </div>
-        ) : (
-          filteredPosts.map((post) => {
-            const isAuthor = post.authorId === currentUser.id;
-            const isAdmin = currentUser.role === 'admin';
-            const canManage = isAuthor || isAdmin;
-            const isMenuOpen = openMenuPostId === post.id;
-            const hasLiked = post.likes.includes(currentUser.id);
-            const areCommentsOpen = activeCommentsPostId === post.id;
-
-            return (
-              <article
-                key={post.id}
-                className="bg-white dark:bg-[#0f1626] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs overflow-hidden transition-all"
-              >
-                {/* Post Header */}
-                <div className="p-4 sm:p-5 pb-3 flex items-center justify-between">
-                  <div
-                    className="flex items-center space-x-3 cursor-pointer group"
-                    onClick={() => onOpenUserProfile && onOpenUserProfile(post.authorId)}
-                    title="Voir le profil de cet utilisateur"
-                  >
-                    <img
-                      src={post.authorAvatar}
-                      alt={post.authorName}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 group-hover:border-indigo-500 transition shrink-0"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
-                          {post.authorName}
-                        </span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          · {post.authorPromo}
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                        {formatDate(post.createdAt)}
-                        {post.updatedAt && <span className="ml-1 italic">(modifié)</span>}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Actions dropdown */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setOpenMenuPostId(isMenuOpen ? null : post.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-
-                    {isMenuOpen && (
-                      <div className="absolute right-0 top-8 z-20 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 py-1 text-xs">
-                        <button
-                          onClick={() => {
-                            setSavingPost(post);
-                            setOpenMenuPostId(null);
-                          }}
-                          className="w-full flex items-center space-x-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                        >
-                          <Bookmark className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>Classer dans un espace</span>
-                        </button>
-
-                        {canManage && (
-                          <>
-                            {post.attachments?.some((a) => a.type === 'audio') && (
-                              <button
-                                onClick={() => {
-                                  const audioAtt = post.attachments?.find(
-                                    (a) => a.type === 'audio'
-                                  );
-                                  if (audioAtt)
-                                    setAttachmentToDelete({ post, attachment: audioAtt });
-                                  setOpenMenuPostId(null);
-                                }}
-                                className="w-full flex items-center space-x-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-medium transition"
-                              >
-                                <Volume2 className="w-3.5 h-3.5 text-rose-500" />
-                                <span>Supprimer le vocal</span>
-                              </button>
-                            )}
-
-                            <button
-                              onClick={() => {
-                                setEditingPost(post);
-                                setOpenMenuPostId(null);
-                              }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                            >
-                              <Edit2 className="w-3.5 h-3.5 text-indigo-500" />
-                              <span>
-                                {isAuthor ? 'Modifier la publication' : 'Modifier (Admin)'}
-                              </span>
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                setPostToDelete(post);
-                                setOpenMenuPostId(null);
-                              }}
-                              className="w-full flex items-center space-x-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-medium transition cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                              <span>
-                                {isAuthor ? 'Supprimer le post' : 'Supprimer (Modération)'}
-                              </span>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Post Content Text */}
-                {post.content && (
-                  <div className="px-4 sm:px-5 py-2 text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                    {post.content}
-                  </div>
-                )}
-
-                {/* Tags */}
-                {post.tags && post.tags.length > 0 && (
-                  <div className="px-4 sm:px-5 py-1.5 flex flex-wrap gap-1.5">
-                    {post.tags.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => setSelectedTagFilter(tag)}
-                        className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                      >
-                        #{tag}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Attachments Section */}
-                {post.attachments && post.attachments.length > 0 && (
-                  <div className="px-4 sm:px-5 py-2.5 space-y-2.5">
-                    {post.attachments.map((att) => {
-                      if (att.type === 'document') {
-                        return (
-                          <div
-                            key={att.id}
-                            className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl transition"
-                          >
-                            <div className="flex items-center space-x-3 truncate pr-2">
-                              <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
-                                <FileText className="w-4 h-4" />
-                              </div>
-                              <div className="truncate">
-                                <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
-                                  {att.name}
-                                </p>
-                                <p className="text-[10px] text-slate-500 font-medium">
-                                  Document joint
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center space-x-1.5 shrink-0">
-                              <a
-                                href={att.url}
-                                download={att.name}
-                                className="flex items-center space-x-1 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-100 transition cursor-pointer"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>Télécharger</span>
-                              </a>
-                              {canManage && (
-                                <button
-                                  type="button"
-                                  onClick={() => setAttachmentToDelete({ post, attachment: att })}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition cursor-pointer"
-                                  title="Supprimer ce document"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      if (att.type === 'audio') {
-                        return (
-                          <div
-                            key={att.id}
-                            className="p-3 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col space-y-2"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center space-x-2 text-xs font-bold text-slate-800 dark:text-slate-200 truncate pr-2">
-                                <Volume2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                                <span className="truncate">{att.name || 'Note Vocale'}</span>
-                              </div>
-                              <div className="flex items-center space-x-1.5 shrink-0">
-                                <a
-                                  href={att.url}
-                                  download={att.name || 'note_vocale.webm'}
-                                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition cursor-pointer"
-                                >
-                                  <Download className="w-3 h-3" />
-                                  <span className="hidden sm:inline">Télécharger</span>
-                                </a>
-                                {canManage && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setAttachmentToDelete({ post, attachment: att })
-                                    }
-                                    className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 transition cursor-pointer"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                    <span>Supprimer</span>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            <audio
-                              controls
-                              preload="metadata"
-                              src={att.url}
-                              className="w-full h-9 rounded-lg"
-                            />
-                          </div>
-                        );
-                      }
-
-                      if (att.type === 'video') {
-                        return (
-                          <div
-                            key={att.id}
-                            className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-black group"
-                          >
-                            <video
-                              controls
-                              src={att.url}
-                              className="w-full max-h-96 object-contain"
-                            />
-                            <div className="p-2 bg-slate-900 text-white text-xs flex items-center justify-between">
-                              <div className="flex items-center space-x-2 truncate pr-2">
-                                <Film className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                                <span className="truncate">{att.name}</span>
-                              </div>
-                              {canManage && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setAttachmentToDelete({ post, attachment: att })
-                                  }
-                                  className="text-rose-400 hover:text-rose-300 text-xs font-medium flex items-center space-x-1 px-2 py-0.5 rounded hover:bg-rose-950 transition cursor-pointer"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  <span>Supprimer</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      if (att.type === 'image') {
-                        return (
-                          <div
-                            key={att.id}
-                            onClick={() =>
-                              setLightboxImage({ url: att.url, name: att.name })
-                            }
-                            className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 group cursor-zoom-in"
-                          >
-                            <img
-                              src={att.url}
-                              alt={att.name}
-                              className="w-full max-h-96 object-cover group-hover:scale-[1.01] transition-transform"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/60 text-white text-[11px] font-medium flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition backdrop-blur-xs">
-                              <ZoomIn className="w-3 h-3" />
-                              <span>Agrandir</span>
-                            </div>
-                            {canManage && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAttachmentToDelete({ post, attachment: att });
-                                }}
-                                className="absolute top-2.5 right-2.5 px-2 py-1 bg-slate-900/80 hover:bg-rose-600 text-white rounded-lg text-xs font-medium flex items-center space-x-1 shadow-md transition cursor-pointer backdrop-blur-xs"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                <span>Supprimer</span>
-                              </button>
-                            )}
-                          </div>
-                        );
-                      }
-
-                      return null;
-                    })}
-                  </div>
-                )}
-
-                {/* Engagement Bar */}
-                <div className="px-4 sm:px-5 py-2.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <div className="flex items-center space-x-4 sm:space-x-6">
-                    <button
-                      onClick={() => handleLike(post.id)}
-                      className={`flex items-center space-x-1.5 font-bold transition cursor-pointer ${
-                        hasLiked ? 'text-rose-600 dark:text-rose-400' : 'hover:text-rose-600'
-                      }`}
-                    >
-                      <Heart
-                        className={`w-4 h-4 ${
-                          hasLiked ? 'fill-current text-rose-600 dark:text-rose-400' : ''
-                        }`}
-                      />
-                      <span>{post.likes.length}</span>
-                      <span className="hidden sm:inline">J'aime</span>
-                    </button>
-
-                    <button
-                      onClick={() => setActiveCommentsPostId(areCommentsOpen ? null : post.id)}
-                      className="flex items-center space-x-1.5 font-semibold text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white transition cursor-pointer"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>{post.comments?.length || 0}</span>
-                      <span className="hidden sm:inline">Commentaires</span>
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => setSavingPost(post)}
-                    className="flex items-center space-x-1.5 font-semibold text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                  >
-                    <Bookmark className="w-3.5 h-3.5" />
-                    <span>Classer</span>
-                  </button>
-                </div>
-
-                {/* Comments Section */}
-                {areCommentsOpen && (
-                  <div className="bg-slate-50/70 dark:bg-[#070c1e] p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 space-y-3.5">
-                    {post.comments && post.comments.length > 0 ? (
-                      <div className="space-y-3">
-                        {(post.comments || [])
-                          .filter((c) => !c.parentId)
-                          .map((com) => {
-                            const replies = (post.comments || []).filter(
-                              (r) => r.parentId === com.id
-                            );
-                            return (
-                              <div key={com.id} className="space-y-2">
-                                <div className="flex items-start space-x-2.5">
-                                  <img
-                                    src={com.userAvatar}
-                                    alt={com.userName}
-                                    className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 mt-0.5 shrink-0"
-                                    referrerPolicy="no-referrer"
-                                  />
-                                  <div className="flex-1 bg-white dark:bg-[#0f1626] p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <div className="flex items-center space-x-2">
-                                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                                          {com.userName}
-                                        </span>
-                                        {com.userPromo && (
-                                          <span className="text-[10px] text-slate-500">
-                                            · {com.userPromo}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <span className="text-[10px] text-slate-400">
-                                        {formatDate(com.createdAt)}
-                                      </span>
-                                    </div>
-                                    <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                                      {com.content}
-                                    </p>
-
-                                    {!currentUser.isRestricted && (
-                                      <div className="mt-2 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            setReplyingTo({
-                                              postId: post.id,
-                                              commentId: com.id,
-                                              userName: com.userName
-                                            })
-                                          }
-                                          className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 transition cursor-pointer"
-                                        >
-                                          <Reply className="w-3 h-3" />
-                                          <span>Répondre</span>
-                                        </button>
-                                        {replies.length > 0 && (
-                                          <span className="text-[10px] text-slate-400">
-                                            {replies.length} réponse
-                                            {replies.length > 1 ? 's' : ''}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {replies.length > 0 && (
-                                  <div className="ml-5 sm:ml-7 pl-3 border-l-2 border-slate-200 dark:border-slate-800 space-y-2">
-                                    {replies.map((reply) => (
-                                      <div key={reply.id} className="flex items-start space-x-2">
-                                        <img
-                                          src={reply.userAvatar}
-                                          alt={reply.userName}
-                                          className="w-5 h-5 rounded-full object-cover border border-slate-200 dark:border-slate-700 mt-0.5 shrink-0"
-                                          referrerPolicy="no-referrer"
-                                        />
-                                        <div className="flex-1 bg-white/90 dark:bg-[#0f1626]/90 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                                          <div className="flex items-center justify-between mb-0.5">
-                                            <div className="flex items-center space-x-1.5">
-                                              <span className="text-[11px] font-bold text-slate-900 dark:text-white">
-                                                {reply.userName}
-                                              </span>
-                                              <span className="text-[9px] text-slate-500">
-                                                {reply.userPromo}
-                                              </span>
-                                            </div>
-                                            <span className="text-[9px] text-slate-400">
-                                              {formatDate(reply.createdAt)}
-                                            </span>
-                                          </div>
-                                          <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                                            {reply.replyToUserName && (
-                                              <span className="text-indigo-600 dark:text-indigo-400 font-bold mr-1">
-                                                @{reply.replyToUserName}
-                                              </span>
-                                            )}
-                                            {reply.content}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-slate-400 text-center py-1">
-                        Aucun commentaire. Soyez le premier à réagir !
-                      </p>
-                    )}
-
-                    {!currentUser.isRestricted ? (
-                      <div className="space-y-1.5">
-                        {replyingTo?.postId === post.id && (
-                          <div className="flex items-center justify-between px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-900 rounded-xl text-xs text-indigo-900 dark:text-indigo-200 font-medium">
-                            <div className="flex items-center space-x-1.5">
-                              <CornerDownRight className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                              <span>
-                                En réponse à{' '}
-                                <strong className="text-indigo-600 dark:text-indigo-300">
-                                  @{replyingTo.userName}
-                                </strong>
-                              </span>
-                            </div>
+                        <div className="flex items-center space-x-1 shrink-0">
+                          {u.isPendingSent ? (
                             <button
                               type="button"
-                              onClick={() => setReplyingTo(null)}
-                              className="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer"
+                              disabled={isBusy}
+                              onClick={() => handleCancelFriendRequest(u)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold cursor-pointer"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              Envoyée
                             </button>
-                          </div>
-                        )}
-
-                        <form
-                          onSubmit={(e) => handleCommentSubmit(post.id, e)}
-                          className="flex items-center space-x-2"
-                        >
-                          <input
-                            type="text"
-                            placeholder={
-                              replyingTo?.postId === post.id
-                                ? `Répondre à @${replyingTo.userName}...`
-                                : 'Écrire un commentaire...'
-                            }
-                            value={commentText[post.id] || ''}
-                            onChange={(e) =>
-                              setCommentText((prev) => ({
-                                ...prev,
-                                [post.id]: e.target.value
-                              }))
-                            }
-                            className="flex-1 px-3.5 py-2 bg-white dark:bg-[#0f1626] border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-800 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
-                          />
-                          <button
-                            type="submit"
-                            disabled={
-                              submittingComment === post.id || !commentText[post.id]?.trim()
-                            }
-                            className="p-2 bg-slate-900 dark:bg-indigo-600 hover:opacity-90 text-white rounded-xl shadow-xs transition disabled:opacity-40 shrink-0 flex items-center justify-center cursor-pointer"
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                          </button>
-                        </form>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => handleSendFriendRequest(u)}
+                              className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold cursor-pointer"
+                            >
+                              Ajouter
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <div className="text-xs text-slate-400 italic text-center py-1">
-                        🔒 Commentaire désactivé (mode lecture seule)
-                      </div>
-                    )}
-                  </div>
-                )}
-              </article>
-            );
-          })
-        )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
       </div>
 
       {/* Lightbox for Feed Images */}
@@ -1184,8 +1400,8 @@ export const FeedView: React.FC<FeedViewProps> = ({
 
       {/* IN-APP DELETE POST CONFIRMATION MODAL */}
       {postToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-[#0f1626] rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-sm bg-white dark:bg-[#0f172a] rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-6 h-6" />
             </div>
@@ -1193,7 +1409,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
               Supprimer cette publication ?
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5">
-              Êtes-vous sûr de vouloir supprimer définitivement cette publication et toutes ses pièces jointes ? Cette action est irréversible.
+              Êtes-vous sûr de vouloir supprimer définitivement cette publication ? Cette action est irréversible.
             </p>
 
             <div className="flex justify-center space-x-2">
@@ -1210,7 +1426,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
                 onClick={handleConfirmDelete}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
               >
-                {deleting ? 'Suppression...' : 'Supprimer définitivement'}
+                {deleting ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
           </div>
@@ -1219,20 +1435,16 @@ export const FeedView: React.FC<FeedViewProps> = ({
 
       {/* IN-APP DELETE ATTACHMENT CONFIRMATION MODAL */}
       {attachmentToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-sm bg-white dark:bg-[#0f1626] rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-sm bg-white dark:bg-[#0f172a] rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl text-center">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              {attachmentToDelete.attachment.type === 'audio'
-                ? 'Supprimer cette note vocale ?'
-                : 'Supprimer cette pièce jointe ?'}
+              Supprimer cette pièce jointe ?
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-5 leading-relaxed">
-              {attachmentToDelete.attachment.type === 'audio'
-                ? "Voulez-vous retirer définitivement cet enregistrement vocal de la publication ?"
-                : 'Voulez-vous retirer définitivement ce fichier de la publication ?'}
+              Voulez-vous retirer définitivement ce fichier de la publication ?
             </p>
 
             <div className="flex justify-center space-x-2">
@@ -1249,7 +1461,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
                 onClick={handleConfirmDeleteAttachment}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
               >
-                {deletingAttachment ? 'Suppression...' : 'Confirmer la suppression'}
+                {deletingAttachment ? 'Suppression...' : 'Confirmer'}
               </button>
             </div>
           </div>

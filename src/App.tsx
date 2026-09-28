@@ -321,10 +321,10 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen ${activeTab === 'chat' ? 'h-[100dvh] overflow-hidden' : ''} bg-slate-50 dark:bg-[#070d20] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative`}>
+    <div className="h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-slate-100 dark:bg-[#070d20] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative">
       
       {/* Fixed Top Header - Hidden on mobile when inside an active chat conversation for full-screen Messenger experience */}
-      <div className={activeTab === 'chat' && isChatConversationOpen ? 'hidden md:block' : 'block'}>
+      <div className={activeTab === 'chat' && isChatConversationOpen ? 'hidden md:block shrink-0' : 'block shrink-0'}>
         <Header
           currentUser={currentUser}
           activeTab={activeTab}
@@ -351,14 +351,14 @@ export default function App() {
         />
       </div>
 
-      {/* Main Tab Content - padded top to never hide under fixed header, padded bottom to never hide under fixed bottom nav */}
+      {/* Main Tab Content - Fixed viewport shell with vertical-only scrolling and zero horizontal wobble */}
       <main
         className={
           activeTab === 'chat'
-            ? `flex-1 min-h-0 flex flex-col overflow-hidden ${
+            ? `flex-1 min-h-0 min-w-0 w-full max-w-full flex flex-col overflow-hidden ${
                 isChatConversationOpen ? 'pt-0 md:pt-16' : 'pt-16'
               }`
-            : 'flex-1 pt-16 sm:pt-17 pb-24'
+            : 'flex-1 min-h-0 min-w-0 w-full max-w-full overflow-y-auto overflow-x-hidden overscroll-x-none pt-15 sm:pt-16 pb-20'
         }
       >
         {activeTab === 'feed' && (
@@ -369,6 +369,7 @@ export default function App() {
             onOpenUserProfile={handleOpenUserProfile}
             onOpenChatWithUser={handleOpenChatWithUser}
             onNavigateTab={(tab) => navigateToTab(tab)}
+            onOpenFriendsModal={() => setShowFriendsModal(true)}
           />
         )}
 
@@ -430,12 +431,26 @@ export default function App() {
         {activeTab === 'admin' && (
           <AdminView currentUser={currentUser} onGoBack={handleGoBack} />
         )}
+
+        {/* Modern Footer inside scrollable main (Hidden when activeTab === 'chat') */}
+        {activeTab !== 'chat' && (
+          <footer className="mt-8 bg-white dark:bg-[#0a1124] border-t border-slate-200 dark:border-blue-950 py-5 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
+            <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <p className="font-bold text-slate-800 dark:text-slate-200">
+                © {new Date().getFullYear()} MK Social • Réseau Professionnel & Collaboratif
+              </p>
+              <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+                Accueil, Messagerie instantanée, Reels courts, Quiz et Espaces de travail
+              </p>
+            </div>
+          </footer>
+        )}
       </main>
 
       {/* Rock-solid Fixed Bottom Navigation Bar (Hidden only inside active chat conversation) */}
       <nav
         id="app-bottom-fixed-nav"
-        className={`fixed bottom-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0a1124]/95 backdrop-blur-xl border-t border-blue-100/90 dark:border-blue-950 items-center justify-around py-1 sm:py-1.5 px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-all h-16 pb-[max(0.25rem,env(safe-area-inset-bottom))] ${
+        className={`fixed bottom-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0a1124]/95 backdrop-blur-xl border-t border-slate-200 dark:border-blue-950 items-center justify-around py-1 sm:py-1.5 px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-all h-16 pb-[max(0.25rem,env(safe-area-inset-bottom))] ${
           activeTab === 'chat' && isChatConversationOpen ? 'hidden' : 'flex'
         }`}
       >
@@ -450,7 +465,7 @@ export default function App() {
             }`}
           >
             <Sparkles className="w-5 h-5 mb-0.5" />
-            <span>Fil</span>
+            <span>Accueil</span>
           </button>
 
           <button
@@ -545,24 +560,11 @@ export default function App() {
         isOpen={showGlobalDocSearch}
         onClose={() => setShowGlobalDocSearch(false)}
         posts={posts}
+        currentUser={currentUser}
         onOpenUserProfile={handleOpenUserProfile}
         onOpenChatWithUser={handleOpenChatWithUser}
         onNavigateTab={(tab) => navigateToTab(tab)}
       />
-
-      {/* Modern Footer (Hidden when activeTab === 'chat') */}
-      {activeTab !== 'chat' && (
-        <footer className="bg-white dark:bg-[#0a1124] border-t border-blue-100 dark:border-blue-950 py-6 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors mb-16">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p className="font-bold text-slate-800 dark:text-slate-200">
-              © {new Date().getFullYear()} MK Social • Réseau Professionnel & Collaboratif
-            </p>
-            <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-              Fil Social en direct, Messagerie instantanée, Reels courts, Quiz et Espaces de travail
-            </p>
-          </div>
-        </footer>
-      )}
 
     </div>
   );

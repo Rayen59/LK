@@ -291,18 +291,44 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
 
-              {/* THE 3-TIRETS (HAMBURGER) BUTTON FOR SLIDING PANEL */}
+              {/* THE 3-BARS (HAMBURGER) BUTTON FOR SLIDING PANEL — Ultra-clear & unmistakable */}
               <button
                 id="mobile-sliding-panel-btn"
                 onClick={onToggleSlidingPanel}
-                className="p-2 sm:px-2.5 sm:py-2 text-slate-700 dark:text-slate-200 bg-white dark:bg-[#0f1a38] hover:bg-blue-50 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900 rounded-xl transition flex items-center space-x-1.5 shrink-0 shadow-2xs"
-                title="Ouvrir le menu complet"
-                aria-label="Menu coulissant"
+                className={`relative px-2.5 py-2 rounded-xl transition flex items-center space-x-2 shrink-0 cursor-pointer border shadow-2xs ${
+                  isSlidingPanelOpen
+                    ? 'bg-blue-600 text-white border-blue-500'
+                    : 'bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white border-slate-300/80 dark:border-slate-700'
+                }`}
+                title="Ouvrir le menu principal (3 barres)"
+                aria-label="Menu principal"
               >
-                <Menu className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span className="hidden sm:inline text-xs font-bold text-slate-800 dark:text-slate-200">
+                {/* Crisp custom 3-bars icon */}
+                <span className="flex flex-col justify-center items-center w-5 h-5 space-y-1">
+                  <span
+                    className={`block w-4.5 h-0.5 rounded-full transition-colors ${
+                      isSlidingPanelOpen ? 'bg-white' : 'bg-slate-900 dark:bg-white'
+                    }`}
+                  />
+                  <span
+                    className={`block w-4.5 h-0.5 rounded-full transition-colors ${
+                      isSlidingPanelOpen ? 'bg-white' : 'bg-slate-900 dark:bg-white'
+                    }`}
+                  />
+                  <span
+                    className={`block w-4.5 h-0.5 rounded-full transition-colors ${
+                      isSlidingPanelOpen ? 'bg-white' : 'bg-slate-900 dark:bg-white'
+                    }`}
+                  />
+                </span>
+                <span className="hidden sm:inline text-xs font-extrabold">
                   Menu
                 </span>
+                {(pendingFriendRequestsCount + unreadMessagesCount) > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center border-2 border-white dark:border-[#0a1124]">
+                    {pendingFriendRequestsCount + unreadMessagesCount}
+                  </span>
+                )}
               </button>
 
             </div>
@@ -325,6 +351,9 @@ export const Header: React.FC<HeaderProps> = ({
         onOpenDocSearch={onOpenDocSearch}
         onOpenNotifications={() => setIsNotificationBoxOpen(true)}
         unreadNotificationsCount={unreadCount}
+        onOpenFriendsModal={onOpenFriendsModal}
+        unreadMessagesCount={unreadMessagesCount}
+        pendingFriendRequestsCount={pendingFriendRequestsCount}
       />
     </>
   );

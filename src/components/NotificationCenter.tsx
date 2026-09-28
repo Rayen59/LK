@@ -223,10 +223,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         className={`relative p-2 rounded-xl transition flex items-center justify-center cursor-pointer ${
           isOpen
             ? 'bg-blue-600 text-white shadow-md shadow-blue-950/50'
-            : 'text-slate-300 hover:text-white hover:bg-blue-950/60'
+            : 'text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-blue-950/60'
         }`}
         title={notificationsEnabled ? "Boîte de notifications" : "Notifications en sourdine"}
-        aria-label="Boîte de notifications LK"
+        aria-label="Boîte de notifications MK"
       >
         {notificationsEnabled ? (
           <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />

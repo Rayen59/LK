@@ -422,6 +422,31 @@ export const api = {
     search: async (query: string): Promise<{ users: User[] }> => {
       return fetchWithAuth(`/api/users/search?q=${encodeURIComponent(query)}`);
     },
+    globalSearch: async (
+      query: string
+    ): Promise<{
+      users: User[];
+      posts: Post[];
+      events: {
+        id: string;
+        kind: 'post_event' | 'forum' | 'poll' | 'quiz';
+        title: string;
+        description: string;
+        authorName: string;
+        authorAvatar: string;
+        authorId: string;
+        authorPromo: string;
+        createdAt: string;
+        likesCount: number;
+        commentsCount: number;
+        tags: string[];
+        attachments: any[];
+      }[];
+      reels: Reel[];
+      documents: any[];
+    }> => {
+      return fetchWithAuth(`/api/users/global-search?q=${encodeURIComponent(query)}`);
+    },
     getProfile: async (
       userId: string
     ): Promise<{
@@ -457,6 +482,7 @@ export const api = {
       friends: User[];
       pendingReceived: User[];
       pendingSent: User[];
+      suggestions?: (User & { mutualFriendsCount?: number; isPendingSent?: boolean })[];
     }> => {
       return fetchWithAuth('/api/friends');
     },
@@ -464,6 +490,13 @@ export const api = {
       targetId: string
     ): Promise<{ status: string; message: string }> => {
       return fetchWithAuth(`/api/friends/request/${targetId}`, {
+        method: 'POST',
+      });
+    },
+    cancelRequest: async (
+      targetId: string
+    ): Promise<{ success: boolean; message: string }> => {
+      return fetchWithAuth(`/api/friends/cancel/${targetId}`, {
         method: 'POST',
       });
     },
@@ -508,8 +541,15 @@ export const api = {
       isBlocked: boolean;
       isBlockedByMe: boolean;
       isBlockedByThem: boolean;
+      isPartnerTyping?: boolean;
     }> => {
       return fetchWithAuth(`/api/messages/${otherUserId}`);
+    },
+    sendTyping: async (receiverId: string, isTyping: boolean): Promise<{ success: boolean }> => {
+      return fetchWithAuth('/api/messages/typing', {
+        method: 'POST',
+        body: JSON.stringify({ receiverId, isTyping }),
+      });
     },
     sendMessage: async (data: {
       receiverId: string;

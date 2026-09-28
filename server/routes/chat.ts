@@ -6,6 +6,62 @@ import { checkContentToleranceWithAI } from "../ai";
 
 export const chatRouter = Router();
 
+// État en mémoire des utilisateurs en train d'écrire (clé: `${senderId}_${receiverId}`)
+const activeTypingMap = new Map<
+  string,
+  { senderId: string; senderName: string; senderAvatar: string; receiverId: string; expiresAt: number }
+>();
+
+function cleanExpiredTyping() {
+  const now = Date.now();
+  for (const [key, val] of activeTypingMap.entries()) {
+    if (val.expiresAt < now) {
+      activeTypingMap.delete(key);
+    }
+  }
+}
+
+// Signaler qu'un utilisateur est en train d'écrire (les 3 points en temps réel)
+chatRouter.post("/messages/typing", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non autorisé" });
+    return;
+  }
+
+  const { receiverId, isTyping } = req.body;
+  if (!receiverId) {
+    res.status(400).json({ error: "receiverId requis" });
+    return;
+  }
+
+  cleanExpiredTyping();
+  const key = `${user.id}_${receiverId}`;
+
+  if (isTyping) {
+    activeTypingMap.set(key, {
+      senderId: user.id,
+      senderName: `${user.prenom} ${user.nom}`,
+      senderAvatar: user.avatarUrl,
+      receiverId,
+      expiresAt: Date.now() + 4500,
+    });
+  } else {
+    activeTypingMap.delete(key);
+  }
+
+  broadcast("USER_TYPING", {
+    senderId: user.id,
+    senderName: `${user.prenom} ${user.nom}`,
+    senderAvatar: user.avatarUrl,
+    receiverId,
+    isTyping: Boolean(isTyping),
+  });
+
+  res.json({ success: true, isTyping: Boolean(isTyping) });
+});
+
 // Récupérer les conversations récentes de l'utilisateur
 chatRouter.get("/conversations", (req: Request, res: Response) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
@@ -111,12 +167,16 @@ chatRouter.get("/messages/:otherUserId", (req: Request, res: Response) => {
   const isBlockedByMe = Boolean(user.blockedUsers?.includes(otherUserId));
   const isBlockedByThem = Boolean(otherUser.blockedUsers?.includes(user.id));
 
+  cleanExpiredTyping();
+  const isPartnerTyping = activeTypingMap.has(`${otherUserId}_${user.id}`);
+
   res.json({
     messages: sorted,
     partner: safeOther,
     isBlocked: isBlockedByMe || isBlockedByThem,
     isBlockedByMe,
-    isBlockedByThem
+    isBlockedByThem,
+    isPartnerTyping
   });
 });
 
@@ -134,6 +194,16 @@ chatRouter.post("/messages", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Destinataire obligatoire." });
     return;
   }
+
+  // Nettoyer l'indicateur de saisie dès l'envoi
+  activeTypingMap.delete(`${user.id}_${receiverId}`);
+  broadcast("USER_TYPING", {
+    senderId: user.id,
+    senderName: `${user.prenom} ${user.nom}`,
+    senderAvatar: user.avatarUrl,
+    receiverId,
+    isTyping: false,
+  });
 
   const receiver = db.users.find((u) => u.id === receiverId);
   if (!receiver) {

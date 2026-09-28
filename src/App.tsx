@@ -321,42 +321,54 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen ${activeTab === 'chat' ? 'h-screen overflow-hidden' : ''} bg-slate-50 dark:bg-[#070d20] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative`}>
+    <div className={`min-h-screen ${activeTab === 'chat' ? 'h-[100dvh] overflow-hidden' : ''} bg-slate-50 dark:bg-[#070d20] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative`}>
       
-      {/* Fixed Top Header */}
-      <Header
-        currentUser={currentUser}
-        activeTab={activeTab}
-        canGoBack={canGoBack}
-        onGoBack={handleGoBack}
-        onTabChange={(tab) => navigateToTab(tab)}
-        onLogout={handleLogout}
-        isLiveConnected={isLiveConnected}
-        darkMode={darkMode}
-        onToggleDarkMode={toggleDarkMode}
-        onOpenDocSearch={() => setShowGlobalDocSearch(true)}
-        notifications={notifications}
-        onNotificationsChange={setNotifications}
-        notificationsEnabled={notificationsEnabled}
-        onToggleNotificationsEnabled={toggleNotificationsEnabled}
-        latestPushNotification={latestPushNotification}
-        onDismissPushNotification={() => setLatestPushNotification(null)}
-        isSlidingPanelOpen={isSlidingPanelOpen}
-        onToggleSlidingPanel={() => setIsSlidingPanelOpen((prev) => !prev)}
-        onCloseSlidingPanel={() => setIsSlidingPanelOpen(false)}
-        onOpenFriendsModal={() => setShowFriendsModal(true)}
-        unreadMessagesCount={unreadDirectMessagesCount}
-        pendingFriendRequestsCount={pendingFriendRequestsCount}
-      />
+      {/* Fixed Top Header - Hidden on mobile when inside an active chat conversation for full-screen Messenger experience */}
+      <div className={activeTab === 'chat' && isChatConversationOpen ? 'hidden md:block' : 'block'}>
+        <Header
+          currentUser={currentUser}
+          activeTab={activeTab}
+          canGoBack={canGoBack}
+          onGoBack={handleGoBack}
+          onTabChange={(tab) => navigateToTab(tab)}
+          onLogout={handleLogout}
+          isLiveConnected={isLiveConnected}
+          darkMode={darkMode}
+          onToggleDarkMode={toggleDarkMode}
+          onOpenDocSearch={() => setShowGlobalDocSearch(true)}
+          notifications={notifications}
+          onNotificationsChange={setNotifications}
+          notificationsEnabled={notificationsEnabled}
+          onToggleNotificationsEnabled={toggleNotificationsEnabled}
+          latestPushNotification={latestPushNotification}
+          onDismissPushNotification={() => setLatestPushNotification(null)}
+          isSlidingPanelOpen={isSlidingPanelOpen}
+          onToggleSlidingPanel={() => setIsSlidingPanelOpen((prev) => !prev)}
+          onCloseSlidingPanel={() => setIsSlidingPanelOpen(false)}
+          onOpenFriendsModal={() => setShowFriendsModal(true)}
+          unreadMessagesCount={unreadDirectMessagesCount}
+          pendingFriendRequestsCount={pendingFriendRequestsCount}
+        />
+      </div>
 
       {/* Main Tab Content - padded top to never hide under fixed header, padded bottom to never hide under fixed bottom nav */}
-      <main className={activeTab === 'chat' ? 'flex-1 min-h-0 pt-16 flex flex-col overflow-hidden' : 'flex-1 pt-16 sm:pt-17 pb-24'}>
+      <main
+        className={
+          activeTab === 'chat'
+            ? `flex-1 min-h-0 flex flex-col overflow-hidden ${
+                isChatConversationOpen ? 'pt-0 md:pt-16' : 'pt-16'
+              }`
+            : 'flex-1 pt-16 sm:pt-17 pb-24'
+        }
+      >
         {activeTab === 'feed' && (
           <FeedView
             currentUser={currentUser}
             posts={posts}
             onRefresh={loadPosts}
             onOpenUserProfile={handleOpenUserProfile}
+            onOpenChatWithUser={handleOpenChatWithUser}
+            onNavigateTab={(tab) => navigateToTab(tab)}
           />
         )}
 
@@ -376,6 +388,7 @@ export default function App() {
             onOpenUserProfile={handleOpenUserProfile}
             onGoBack={handleGoBack}
             onConversationStateChange={setIsChatConversationOpen}
+            onPartnerChange={setChatPartnerId}
           />
         )}
 
@@ -527,11 +540,14 @@ export default function App() {
         onOpenChatWithUser={handleOpenChatWithUser}
       />
 
-      {/* Global Document Search Modal */}
+      {/* Global Search Modal */}
       <DocumentSearchModal
         isOpen={showGlobalDocSearch}
         onClose={() => setShowGlobalDocSearch(false)}
         posts={posts}
+        onOpenUserProfile={handleOpenUserProfile}
+        onOpenChatWithUser={handleOpenChatWithUser}
+        onNavigateTab={(tab) => navigateToTab(tab)}
       />
 
       {/* Modern Footer (Hidden when activeTab === 'chat') */}

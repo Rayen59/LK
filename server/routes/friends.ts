@@ -37,7 +37,68 @@ friendsRouter.get("/", (req: Request, res: Response) => {
       return safe;
     });
 
-  res.json({ friends, pendingReceived, pendingSent });
+  // Générer des suggestions d'amis aléatoires parmi les membres de la plateforme
+  const myFriendsSet = new Set(user.friends || []);
+  const myReceivedSet = new Set(user.friendRequestsReceived || []);
+  const mySentSet = new Set(user.friendRequestsSent || []);
+  const myBlockedSet = new Set(user.blockedUsers || []);
+
+  const rawSuggestions = db.users
+    .filter((u) => {
+      if (u.id === user.id) return false;
+      if (u.isDeletedByUser || u.isBanned) return false;
+      if (myFriendsSet.has(u.id)) return false;
+      if (myReceivedSet.has(u.id)) return false;
+      if (myBlockedSet.has(u.id)) return false;
+      if ((u.blockedUsers || []).includes(user.id)) return false;
+      return true;
+    })
+    .map((u) => {
+      const { password: _, ...safe } = u;
+      const mutualCount = (u.friends || []).filter((fid) => myFriendsSet.has(fid)).length;
+      return {
+        ...safe,
+        mutualFriendsCount: mutualCount,
+        isPendingSent: mySentSet.has(u.id)
+      };
+    });
+
+  // Mélange aléatoire (Fisher-Yates)
+  for (let i = rawSuggestions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rawSuggestions[i], rawSuggestions[j]] = [rawSuggestions[j], rawSuggestions[i]];
+  }
+
+  res.json({
+    friends,
+    pendingReceived,
+    pendingSent,
+    suggestions: rawSuggestions.slice(0, 20)
+  });
+});
+
+// Annuler une invitation d'ami envoyée
+friendsRouter.post("/cancel/:targetId", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non autorisé" });
+    return;
+  }
+
+  const targetId = req.params.targetId;
+  const target = db.users.find((u) => u.id === targetId);
+
+  user.friendRequestsSent = (user.friendRequestsSent || []).filter((id) => id !== targetId);
+  if (target) {
+    target.friendRequestsReceived = (target.friendRequestsReceived || []).filter(
+      (id) => id !== user.id
+    );
+  }
+  saveDatabase();
+
+  broadcast("FRIEND_UPDATE", { userId: user.id, targetId });
+  res.json({ success: true, message: "Invitation annulée." });
 });
 
 // Envoyer une invitation d'ami

@@ -20,7 +20,8 @@ import {
   User as UserIcon,
   Sparkles,
   Lock,
-  ArrowLeft
+  ArrowLeft,
+  Search
 } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import { SlidingPanel } from './SlidingPanel';
@@ -233,14 +234,14 @@ export const Header: React.FC<HeaderProps> = ({
                 onClose={() => setIsNotificationBoxOpen(false)}
               />
 
-              {/* Quick Document Search button */}
+              {/* Quick Global Search button */}
               <button
                 onClick={onOpenDocSearch}
-                className="p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition flex items-center space-x-1 text-xs font-semibold shrink-0"
-                title="Rechercher des documents, cours, vocaux"
+                className="p-2 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition flex items-center space-x-1 text-xs font-semibold shrink-0"
+                title="Recherche globale : Personnes, événements, vidéos, documents"
               >
-                <Files className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                <span className="hidden 2xl:inline">Docs</span>
+                <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                <span className="hidden 2xl:inline">Rechercher</span>
               </button>
 
               {/* Dark Mode Toggle */}

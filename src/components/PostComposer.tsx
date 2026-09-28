@@ -10,6 +10,9 @@ interface PostComposerProps {
 }
 
 const MEDICAL_TAGS = [
+  'Événement',
+  'Conférence',
+  'Workshop',
   'Anatomie',
   'Physiologie',
   'Sémiologie',
@@ -17,7 +20,6 @@ const MEDICAL_TAGS = [
   'Pédiatrie',
   'Chirurgie',
   'Pharmacologie',
-  'Gynécologie',
   'Urgences',
   'Stage CHU Sfax',
   'Annales & QCM',

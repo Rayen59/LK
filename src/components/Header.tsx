@@ -1,32 +1,36 @@
 import React from 'react';
 import { User, AppNotification } from '../types';
 import {
-  Radio,
   MessageSquare,
   BookOpen,
   BarChart3,
   Bookmark,
   LogOut,
-  Menu,
-  X,
-  ShieldCheck,
   ShieldAlert,
   Moon,
   Sun,
-  Files,
   Film,
   MessageCircle,
   Users,
-  User as UserIcon,
   Sparkles,
-  Lock,
   ArrowLeft,
-  Search
+  Search,
+  Compass,
+  User as UserIcon
 } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import { SlidingPanel } from './SlidingPanel';
 
-export type MainTabType = 'feed' | 'reels' | 'chat' | 'profile' | 'forums' | 'quizzes' | 'polls' | 'spaces' | 'admin';
+export type MainTabType =
+  | 'feed'
+  | 'reels'
+  | 'chat'
+  | 'profile'
+  | 'forums'
+  | 'quizzes'
+  | 'polls'
+  | 'spaces'
+  | 'admin';
 
 interface HeaderProps {
   currentUser: User;
@@ -46,7 +50,7 @@ interface HeaderProps {
   onToggleNotificationsEnabled: () => void;
   latestPushNotification: AppNotification | null;
   onDismissPushNotification: () => void;
-  // Sliding panel
+  // Portal hub modal
   isSlidingPanelOpen: boolean;
   onToggleSlidingPanel: () => void;
   onCloseSlidingPanel: () => void;
@@ -56,6 +60,57 @@ interface HeaderProps {
   pendingFriendRequestsCount?: number;
 }
 
+const PAGE_METADATA: Record<
+  MainTabType,
+  { category: string; title: string; subtitle: string }
+> = {
+  feed: {
+    category: 'Espace Social',
+    title: "Fil d'actualité",
+    subtitle: 'Publications, documents partagés et actualités des membres'
+  },
+  reels: {
+    category: 'Médias Courts',
+    title: 'Reels Vidéo',
+    subtitle: 'Créations et vidéos verticales de moins de 60 secondes'
+  },
+  chat: {
+    category: 'Communication',
+    title: 'Messagerie Directe',
+    subtitle: 'Discussions privées instantanées et partage multimédia'
+  },
+  forums: {
+    category: 'Collaboration',
+    title: 'Communautés & Salons',
+    subtitle: 'Espaces de discussion thématiques publics et privés'
+  },
+  quizzes: {
+    category: 'Apprentissage',
+    title: 'Quiz & Classements',
+    subtitle: 'Évaluations QCM interactives et tableau d’honneur'
+  },
+  polls: {
+    category: 'Consultations',
+    title: 'Sondages',
+    subtitle: 'Votes en temps réel et avis de la communauté'
+  },
+  spaces: {
+    category: 'Bibliothèque',
+    title: 'Mes Espaces',
+    subtitle: 'Dossiers personnels et publications enregistrées'
+  },
+  profile: {
+    category: 'Compte Membre',
+    title: 'Profil & Publications',
+    subtitle: 'Informations personnelles, amis et paramètres de confidentialité'
+  },
+  admin: {
+    category: 'Supervision',
+    title: 'Administration & Modération',
+    subtitle: 'Gestion des membres, permissions et sécurité du réseau'
+  }
+};
+
 export const Header: React.FC<HeaderProps> = ({
   currentUser,
   activeTab,
@@ -63,7 +118,6 @@ export const Header: React.FC<HeaderProps> = ({
   onGoBack,
   canGoBack = false,
   onLogout,
-  isLiveConnected,
   darkMode,
   onToggleDarkMode,
   onOpenDocSearch,
@@ -78,141 +132,122 @@ export const Header: React.FC<HeaderProps> = ({
   onCloseSlidingPanel,
   onOpenFriendsModal,
   unreadMessagesCount = 0,
-  pendingFriendRequestsCount = 0,
+  pendingFriendRequestsCount = 0
 }) => {
   const [isNotificationBoxOpen, setIsNotificationBoxOpen] = React.useState(false);
   const isAdmin = currentUser.role === 'admin';
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const currentMeta = PAGE_METADATA[activeTab] || PAGE_METADATA.feed;
 
-  interface NavItem {
+  const mobileTabs: {
     id: MainTabType;
     label: string;
     icon: React.ComponentType<{ className?: string }>;
-    badge?: string;
     unreadCount?: number;
-  }
-
-  const navItems: NavItem[] = [
-    { id: 'feed', label: 'Fil Social', icon: Sparkles },
-    { id: 'reels', label: 'Reels', icon: Film, badge: '<60s' },
+  }[] = [
+    { id: 'feed', label: 'Accueil', icon: Sparkles },
+    { id: 'reels', label: 'Reels', icon: Film },
     { id: 'chat', label: 'Messages', icon: MessageCircle, unreadCount: unreadMessagesCount },
     { id: 'forums', label: 'Communautés', icon: MessageSquare },
     { id: 'quizzes', label: 'Quiz', icon: BookOpen },
     { id: 'polls', label: 'Sondages', icon: BarChart3 },
     { id: 'spaces', label: 'Espaces', icon: Bookmark },
+    { id: 'profile', label: 'Mon Profil', icon: UserIcon }
   ];
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0a1124]/95 backdrop-blur-xl border-b border-blue-100/80 dark:border-blue-950/80 text-slate-900 dark:text-slate-100 shadow-xs transition-colors">
-        <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-6">
-          <div className="flex items-center justify-between h-15 sm:h-16 gap-1.5 sm:gap-4">
+      <header className="sticky top-0 z-30 w-full bg-white/95 dark:bg-[#0a1124]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 text-slate-900 dark:text-slate-100 transition-colors">
+        <div className="w-full px-3 sm:px-5 lg:px-7">
+          {/* Primary Top Workspace Bar (3-Zone Contract) */}
+          <div className="flex items-center justify-between h-14 sm:h-15 gap-3">
             
-            {/* Left: Back Arrow + Logo & Social Branding */}
-            <div className="flex items-center space-x-1.5 sm:space-x-3 min-w-0 shrink-0">
-              {/* Permanent Back Arrow button whenever canGoBack */}
+            {/* ZONE 1: Brand (on mobile) + Back Button + Clear Page Breadcrumb Title */}
+            <div className="flex items-center space-x-2.5 min-w-0 shrink-0">
+              {/* Mobile/Tablet Brand Mark (Desktop has the Left Workspace Sidebar) */}
+              <button
+                type="button"
+                onClick={() => onTabChange('feed')}
+                className="lg:hidden flex items-center space-x-2 shrink-0 cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-xs tracking-tight shadow-xs">
+                  MK
+                </div>
+              </button>
+
               {canGoBack && onGoBack && (
                 <button
                   id="header-back-arrow-btn"
+                  type="button"
                   onClick={onGoBack}
-                  className="flex items-center space-x-1 px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-200 border border-blue-200/80 dark:border-blue-800/80 text-xs font-semibold transition-all active:scale-95 group shrink-0"
+                  className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition cursor-pointer shrink-0 whitespace-nowrap"
                   title="Revenir à la page précédente"
-                  aria-label="Revenir à la page précédente"
                 >
-                  <ArrowLeft className="w-4 h-4 text-blue-600 dark:text-blue-300 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+                  <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
                   <span className="hidden sm:inline">Retour</span>
                 </button>
               )}
 
-              <div
-                className="flex items-center space-x-2.5 cursor-pointer select-none min-w-0 shrink-0 group"
-                onClick={() => onTabChange('feed')}
-              >
-                <div className="w-8.5 h-8.5 sm:w-9.5 sm:h-9.5 rounded-xl bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center text-white shadow-md shadow-blue-600/30 group-hover:scale-105 transition-transform shrink-0 border border-blue-400/30">
-                  <span className="font-black text-xs sm:text-sm tracking-tight text-white drop-shadow-xs">MK</span>
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center space-x-1 sm:space-x-1.5">
-                    <span className="font-extrabold text-sm sm:text-base tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
-                      MK<span className="text-blue-600 dark:text-blue-400 font-semibold ml-0.5">Social</span>
-                    </span>
-                    <span className="inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-bold uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
-                      Live
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 dark:text-blue-300/70 hidden md:block font-medium truncate">
-                    Réseau Social Professionnel & Échanges
-                  </p>
-                </div>
+              {/* Contextual Breadcrumb & Page Title */}
+              <div className="min-w-0 flex items-center space-x-2">
+                <span className="hidden xl:inline text-xs font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                  {currentMeta.category}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="hidden xl:inline text-slate-300 dark:text-slate-700 text-xs"
+                >
+                  /
+                </span>
+                <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white truncate whitespace-nowrap">
+                  {currentMeta.title}
+                </h1>
               </div>
             </div>
 
-            {/* Middle: Desktop Navigation links */}
-            <nav className="hidden lg:flex items-center space-x-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    id={`nav-btn-${item.id}`}
-                    onClick={() => onTabChange(item.id as MainTabType)}
-                    className={`relative flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                      isActive
-                        ? 'bg-blue-600 text-white dark:bg-blue-600 dark:text-white shadow-sm shadow-blue-600/30'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50/70 dark:hover:bg-blue-950/50'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span>{item.label}</span>
-                    {item.badge && (
-                      <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
-                        isActive 
-                          ? 'bg-white/20 text-white' 
-                          : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                      }`}>
-                        {item.badge}
-                      </span>
-                    )}
-                    {item.unreadCount !== undefined && item.unreadCount > 0 && (
-                      <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
-                        {item.unreadCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            {/* ZONE 2: Global Search Bar Trigger */}
+            <div className="flex-1 max-w-md mx-2 hidden md:block">
+              <button
+                type="button"
+                onClick={onOpenDocSearch}
+                className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl bg-slate-100/90 hover:bg-slate-200/70 dark:bg-slate-800/80 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-500 dark:text-slate-400 transition cursor-pointer"
+              >
+                <span className="flex items-center space-x-2 truncate">
+                  <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span className="truncate">
+                    Rechercher un membre, un cours, une publication...
+                  </span>
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500 ml-2 shrink-0">
+                  Explorer
+                </span>
+              </button>
+            </div>
 
-              {isAdmin && (
-                <button
-                  id="nav-btn-admin"
-                  onClick={() => onTabChange('admin')}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-                    activeTab === 'admin'
-                      ? 'bg-blue-800 text-white shadow-xs'
-                      : 'text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800'
-                  }`}
-                >
-                  <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-                  <span>Modération</span>
-                </button>
-              )}
-            </nav>
+            {/* ZONE 3: Primary Workspace Actions */}
+            <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+              {/* Mobile Search Trigger */}
+              <button
+                type="button"
+                onClick={onOpenDocSearch}
+                className="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
+                title="Rechercher"
+              >
+                <Search className="w-4 h-4" />
+              </button>
 
-            {/* Right Controls (Carefully scaled to never overflow on mobile) */}
-            <div className="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
-              
-              {/* Friends Button */}
+              {/* Friends & Network Button */}
               {onOpenFriendsModal && (
                 <button
+                  type="button"
                   onClick={onOpenFriendsModal}
-                  className="hidden sm:flex relative p-2 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition items-center space-x-1 text-xs font-semibold shrink-0"
-                  title="Gérer les amis et invitations"
+                  className="relative px-2.5 py-1.5 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition flex items-center space-x-1.5 text-xs font-semibold shrink-0 cursor-pointer whitespace-nowrap"
+                  title="Réseau, amis et invitations"
                 >
-                  <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                  <span className="hidden xl:inline">Amis</span>
+                  <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="hidden sm:inline">Réseau</span>
                   {pendingFriendRequestsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center border-2 border-white dark:border-[#0a1124] shadow-xs animate-pulse">
+                    <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px] font-mono tabular-nums font-bold">
                       {pendingFriendRequestsCount}
                     </span>
                   )}
@@ -234,115 +269,117 @@ export const Header: React.FC<HeaderProps> = ({
                 onClose={() => setIsNotificationBoxOpen(false)}
               />
 
-              {/* Quick Global Search button */}
-              <button
-                onClick={onOpenDocSearch}
-                className="p-2 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition flex items-center space-x-1 text-xs font-semibold shrink-0"
-                title="Recherche globale : Personnes, événements, vidéos, documents"
-              >
-                <Search className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                <span className="hidden 2xl:inline">Rechercher</span>
-              </button>
-
               {/* Dark Mode Toggle */}
               <button
                 id="theme-toggle-btn"
+                type="button"
                 onClick={onToggleDarkMode}
-                className="p-2 text-slate-600 dark:text-slate-300 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 rounded-xl transition shrink-0"
-                title={darkMode ? "Passer en mode clair" : "Activer le mode sombre"}
+                className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition shrink-0 cursor-pointer"
+                title={darkMode ? 'Passer en mode clair' : 'Activer le mode sombre'}
               >
                 {darkMode ? (
-                  <Sun className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-400" />
+                  <Sun className="w-4 h-4 text-amber-400" />
                 ) : (
-                  <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-blue-600" />
+                  <Moon className="w-4 h-4 text-slate-700" />
                 )}
               </button>
 
-              {/* Current User Profile chip */}
-              <div
-                onClick={() => onTabChange('profile')}
-                className={`hidden md:flex items-center space-x-2 py-1 px-2.5 rounded-xl transition cursor-pointer shrink-0 border ${
-                  activeTab === 'profile'
-                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 text-blue-900 dark:text-blue-100 shadow-2xs'
-                    : 'bg-white dark:bg-[#0f1a38] border-blue-100 dark:border-blue-900 hover:border-blue-300 dark:hover:border-blue-700 shadow-2xs'
-                }`}
-                title="Consulter mon profil et mes publications"
-              >
-                <div className="relative">
-                  <img
-                    src={currentUser.avatarUrl}
-                    alt={currentUser.prenom}
-                    className="w-7 h-7 rounded-full object-cover border-2 border-blue-500 shrink-0"
-                    referrerPolicy="no-referrer"
-                  />
-                  {currentUser.isLocked && (
-                    <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[8px] font-black" title="Profil verrouillé">
-                      🔒
-                    </span>
-                  )}
-                </div>
-                <div className="text-left min-w-0 max-w-[95px]">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                    {currentUser.prenom}
-                  </div>
-                  <div className="text-[10px] text-blue-600 dark:text-blue-300 font-medium truncate">
-                    {currentUser.promo || 'Profil'}
-                  </div>
-                </div>
-              </div>
-
-              {/* THE 3-BARS (HAMBURGER) BUTTON FOR SLIDING PANEL — Ultra-clear & unmistakable */}
+              {/* Portail des Pages Button (Opens the Centered Bento Hub Modal) */}
               <button
                 id="mobile-sliding-panel-btn"
+                type="button"
                 onClick={onToggleSlidingPanel}
-                className={`relative px-2.5 py-2 rounded-xl transition flex items-center space-x-2 shrink-0 cursor-pointer border shadow-2xs ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shrink-0 cursor-pointer whitespace-nowrap border ${
                   isSlidingPanelOpen
                     ? 'bg-blue-600 text-white border-blue-500'
-                    : 'bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-900 dark:text-white border-slate-300/80 dark:border-slate-700'
+                    : 'bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border-slate-200/80 dark:border-slate-700'
                 }`}
-                title="Ouvrir le menu principal (3 barres)"
-                aria-label="Menu principal"
+                title="Ouvrir la vue d'ensemble de toutes les pages"
               >
-                {/* Crisp custom 3-bars icon */}
-                <span className="flex flex-col justify-center items-center w-5 h-5 space-y-1">
-                  <span
-                    className={`block w-4.5 h-0.5 rounded-full transition-colors ${
-                      isSlidingPanelOpen ? 'bg-white' : 'bg-slate-900 dark:bg-white'
-                    }`}
-                  />
-                  <span
-                    className={`block w-4.5 h-0.5 rounded-full transition-colors ${
-                      isSlidingPanelOpen ? 'bg-white' : 'bg-slate-900 dark:bg-white'
-                    }`}
-                  />
-                  <span
-                    className={`block w-4.5 h-0.5 rounded-full transition-colors ${
-                      isSlidingPanelOpen ? 'bg-white' : 'bg-slate-900 dark:bg-white'
-                    }`}
-                  />
-                </span>
-                <span className="hidden sm:inline text-xs font-extrabold">
-                  Menu
-                </span>
-                {(pendingFriendRequestsCount + unreadMessagesCount) > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center border-2 border-white dark:border-[#0a1124]">
-                    {pendingFriendRequestsCount + unreadMessagesCount}
-                  </span>
-                )}
+                <Compass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span className="hidden sm:inline">Toutes les pages</span>
               </button>
 
+              {/* Profile Quick Chip */}
+              <button
+                type="button"
+                onClick={() => onTabChange('profile')}
+                className={`hidden sm:flex items-center space-x-2 py-1 px-2 rounded-xl transition cursor-pointer shrink-0 border ${
+                  activeTab === 'profile'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-400 dark:border-blue-600'
+                    : 'bg-white dark:bg-[#0f172a] border-slate-200 dark:border-slate-800 hover:border-blue-400'
+                }`}
+                title="Voir mon profil"
+              >
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.prenom}
+                  className="w-6 h-6 rounded-full object-cover border border-blue-500 shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 max-w-[90px] truncate">
+                  {currentUser.prenom}
+                </span>
+              </button>
             </div>
+          </div>
+
+          {/* Mobile & Tablet Horizontal Section Switcher (Visible when Left Sidebar is hidden) */}
+          <div className="lg:hidden flex items-center gap-1 overflow-x-auto no-scrollbar py-2 border-t border-slate-100 dark:border-slate-800/80">
+            {mobileTabs.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onTabChange(item.id)}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-2xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span>{item.label}</span>
+                  {item.unreadCount !== undefined && item.unreadCount > 0 && (
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono tabular-nums font-bold ${
+                        isActive ? 'bg-white text-blue-600' : 'bg-rose-500 text-white'
+                      }`}
+                    >
+                      {item.unreadCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => onTabChange('admin')}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap shrink-0 cursor-pointer ${
+                  activeTab === 'admin'
+                    ? 'bg-blue-800 text-white'
+                    : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
+                <span>Admin</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      {/* THE SLIDING PANEL (DRAWER) */}
+      {/* Centered Executive Page Directory Modal */}
       <SlidingPanel
         isOpen={isSlidingPanelOpen}
         onClose={onCloseSlidingPanel}
         currentUser={currentUser}
-        activeTab={activeTab as any}
-        onTabChange={(tab) => onTabChange(tab as MainTabType)}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
         onLogout={onLogout}
         darkMode={darkMode}
         onToggleDarkMode={onToggleDarkMode}
@@ -358,4 +395,3 @@ export const Header: React.FC<HeaderProps> = ({
     </>
   );
 };
-

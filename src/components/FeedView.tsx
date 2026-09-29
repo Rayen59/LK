@@ -85,6 +85,7 @@ export const FeedView: React.FC<FeedViewProps> = ({
   const [showFullSearch, setShowFullSearch] = useState(false);
   const [initialSearchQuery, setInitialSearchQuery] = useState('');
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
+  const [contentFilter, setContentFilter] = useState<'all' | 'documents' | 'media' | 'audio'>('all');
 
   // Random Friend Suggestions & Incoming Requests in Home Feed
   const [friendSuggestions, setFriendSuggestions] = useState<SuggestedUser[]>([]);
@@ -302,8 +303,19 @@ export const FeedView: React.FC<FeedViewProps> = ({
   };
 
   const filteredPosts = posts.filter((p) => {
-    if (!selectedTagFilter) return true;
-    return p.tags?.includes(selectedTagFilter);
+    if (selectedTagFilter && !p.tags?.includes(selectedTagFilter)) {
+      return false;
+    }
+    if (contentFilter === 'documents') {
+      return p.attachments?.some((a) => a.type === 'document');
+    }
+    if (contentFilter === 'media') {
+      return p.attachments?.some((a) => a.type === 'image' || a.type === 'video');
+    }
+    if (contentFilter === 'audio') {
+      return p.attachments?.some((a) => a.type === 'audio');
+    }
+    return true;
   });
 
   const visibleSuggestions = friendSuggestions.filter((u) => !dismissedIds.has(u.id));
@@ -341,127 +353,18 @@ export const FeedView: React.FC<FeedViewProps> = ({
           </div>
         )}
 
-        {/* Fixed 3-Column Layout on Desktop, Clean Locked Single Column on Mobile */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full min-w-0">
+        {/* Clean 2-Column Workspace Layout (Main Feed + Network & Quick Modules Sidebar) */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start w-full min-w-0">
           
-          {/* LEFT SIDEBAR (Desktop Only): Profile Card & Quick Navigation */}
-          <aside className="hidden lg:block lg:col-span-3 sticky top-4 space-y-3 min-w-0">
-            {/* User Card */}
-            <div
-              onClick={() => onNavigateTab?.('profile')}
-              className="p-3.5 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 shadow-2xs hover:border-blue-400 transition cursor-pointer flex items-center space-x-3"
-            >
-              <img
-                src={currentUser.avatarUrl}
-                alt={currentUser.prenom}
-                className="w-11 h-11 rounded-full object-cover border-2 border-blue-500 shrink-0"
-                referrerPolicy="no-referrer"
-              />
-              <div className="min-w-0">
-                <div className="text-sm font-extrabold text-slate-900 dark:text-white truncate flex items-center space-x-1">
-                  <span className="truncate">
-                    {currentUser.prenom} {currentUser.nom}
-                  </span>
-                  <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
-                </div>
-                <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold truncate">
-                  {currentUser.promo || 'Membre MK'}
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Menu Links */}
-            <div className="p-2.5 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-1">
-              <div className="px-2.5 py-1.5 text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                Raccourcis Accueil
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onOpenFriendsModal?.()}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
-              >
-                <span className="flex items-center space-x-2.5">
-                  <Users className="w-4 h-4 text-indigo-500" />
-                  <span>Amis & Invitations</span>
-                </span>
-                {pendingReceived.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[10px] font-extrabold">
-                    {pendingReceived.length}
-                  </span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab?.('chat')}
-                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
-              >
-                <MessageCircle className="w-4 h-4 text-emerald-500" />
-                <span>Messagerie Directe</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab?.('reels')}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
-              >
-                <span className="flex items-center space-x-2.5">
-                  <Film className="w-4 h-4 text-rose-500" />
-                  <span>Reels Vidéo</span>
-                </span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-300">
-                  &lt;60s
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab?.('forums')}
-                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
-              >
-                <MessageSquare className="w-4 h-4 text-violet-500" />
-                <span>Communautés & Salons</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab?.('quizzes')}
-                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
-              >
-                <BookOpen className="w-4 h-4 text-amber-500" />
-                <span>Quiz & Défis QCM</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab?.('polls')}
-                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
-              >
-                <BarChart3 className="w-4 h-4 text-teal-500" />
-                <span>Sondages</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateTab?.('spaces')}
-                className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
-              >
-                <Bookmark className="w-4 h-4 text-sky-500" />
-                <span>Mes Espaces Enregistrés</span>
-              </button>
-            </div>
-          </aside>
-
-          {/* CENTER FEED COLUMN: Strictly locked width (min-w-0 w-full overflow-hidden) */}
-          <div className="col-span-1 lg:col-span-6 min-w-0 w-full max-w-full overflow-hidden">
+          {/* MAIN FEED COLUMN */}
+          <div className="col-span-1 xl:col-span-8 min-w-0 w-full max-w-full overflow-hidden">
             
             {/* Restriction Alert for Read-Only Users */}
             {currentUser.isRestricted && (
-              <div className="mb-3.5 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex items-start space-x-3 shadow-2xs">
+              <div className="mb-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex items-start space-x-3 shadow-2xs">
                 <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div className="min-w-0">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                  <h4 className="text-xs font-bold text-amber-800 dark:text-amber-300">
                     Mode Lecture Seule Activé
                   </h4>
                   <p className="text-xs mt-0.5 leading-relaxed">
@@ -471,68 +374,82 @@ export const FeedView: React.FC<FeedViewProps> = ({
               </div>
             )}
 
-            {/* 1. COMPACT SEARCH BAR & QUICK FILTERS */}
-            <div className="mb-3.5 bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-2.5 sm:p-3 shadow-2xs w-full min-w-0 overflow-hidden">
-              <div className="flex items-center gap-2 w-full min-w-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInitialSearchQuery('');
-                    setShowFullSearch(true);
-                  }}
-                  className="flex-1 min-w-0 flex items-center space-x-2.5 px-3.5 py-2 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/70 dark:hover:bg-slate-800 rounded-full text-left transition cursor-pointer"
-                >
-                  <Search className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                  <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate">
-                    Rechercher personnes, événements, vidéos, cours...
-                  </span>
-                </button>
-
-                {selectedTagFilter && (
+            {/* 1. FEED ORGANIZATION BAR: Content Filter Tabs + Search Trigger */}
+            <div className="mb-4 bg-white dark:bg-[#0f172a] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-3 shadow-2xs w-full min-w-0 overflow-hidden space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                {/* Segmented Content Type Filter */}
+                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl overflow-x-auto no-scrollbar">
                   <button
-                    onClick={() => setSelectedTagFilter(null)}
-                    className="shrink-0 flex items-center space-x-1 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-full border border-blue-200 dark:border-blue-800"
+                    type="button"
+                    onClick={() => setContentFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                      contentFilter === 'all'
+                        ? 'bg-white dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
                   >
-                    <span>#{selectedTagFilter}</span>
-                    <X className="w-3.5 h-3.5" />
+                    Tout le fil ({posts.length})
                   </button>
-                )}
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => setContentFilter('documents')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                      contentFilter === 'documents'
+                        ? 'bg-white dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Documents & Cours
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContentFilter('media')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                      contentFilter === 'media'
+                        ? 'bg-white dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Photos & Vidéos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContentFilter('audio')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                      contentFilter === 'audio'
+                        ? 'bg-white dark:bg-[#0f172a] text-blue-600 dark:text-blue-400 shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Notes Vocales
+                  </button>
+                </div>
 
-              {/* Quick Filter Shortcuts — strictly contained */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 mt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs w-full">
-                <button
-                  type="button"
-                  onClick={() => setShowFullSearch(true)}
-                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-700 dark:text-slate-200 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
-                >
-                  <Users className="w-3.5 h-3.5 text-blue-500" />
-                  <span>Personnes</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowFullSearch(true)}
-                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-slate-700 dark:text-slate-200 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
-                >
-                  <Calendar className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Événements</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowFullSearch(true)}
-                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-slate-700 dark:text-slate-200 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
-                >
-                  <Film className="w-3.5 h-3.5 text-rose-500" />
-                  <span>Vidéos</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowFullSearch(true)}
-                  className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950/50 text-slate-700 dark:text-slate-200 font-semibold flex items-center space-x-1.5 shrink-0 transition cursor-pointer"
-                >
-                  <FileText className="w-3.5 h-3.5 text-teal-500" />
-                  <span>Documents</span>
-                </button>
+                {/* Search & Tag Reset */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {selectedTagFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTagFilter(null)}
+                      className="flex items-center space-x-1 px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-lg border border-blue-200 dark:border-blue-800 cursor-pointer"
+                    >
+                      <span>#{selectedTagFilter}</span>
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInitialSearchQuery('');
+                      setShowFullSearch(true);
+                    }}
+                    className="flex items-center space-x-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800/90 hover:bg-slate-200/70 dark:hover:bg-slate-800 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 transition cursor-pointer whitespace-nowrap"
+                  >
+                    <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>Recherche avancée</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1219,8 +1136,67 @@ export const FeedView: React.FC<FeedViewProps> = ({
             </div>
           </div>
 
-          {/* RIGHT SIDEBAR (Desktop Only): Invitations & Friend Suggestions */}
-          <aside className="hidden lg:block lg:col-span-3 sticky top-4 space-y-4 min-w-0">
+          {/* RIGHT SIDEBAR (Desktop xl+): Quick Modules, Invitations & Friend Suggestions */}
+          <aside className="hidden xl:block xl:col-span-4 sticky top-4 space-y-4 min-w-0">
+            {/* Quick Direct Access to Collaborative Pages */}
+            <div className="p-4 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                  Espaces & Outils Collaboratifs
+                </span>
+                <span className="text-[11px] text-slate-400">Accès direct</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('forums')}
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/70 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-left transition cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4 text-violet-600 dark:text-violet-400 mb-1" />
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Communautés</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    Salons & débats
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('quizzes')}
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/70 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-left transition cursor-pointer"
+                >
+                  <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400 mb-1" />
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Quiz & QCM</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    Défis & scores
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('polls')}
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/70 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-left transition cursor-pointer"
+                >
+                  <BarChart3 className="w-4 h-4 text-teal-600 dark:text-teal-400 mb-1" />
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Sondages</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    Votes en direct
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.('spaces')}
+                  className="p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/70 dark:bg-slate-800/70 dark:hover:bg-slate-800 border border-slate-200/70 dark:border-slate-700/70 text-left transition cursor-pointer"
+                >
+                  <Bookmark className="w-4 h-4 text-sky-600 dark:text-sky-400 mb-1" />
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">Mes Espaces</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    Favoris classés
+                  </div>
+                </button>
+              </div>
+            </div>
             {/* Pending Received Requests */}
             {pendingReceived.length > 0 && (
               <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200/90 dark:border-slate-800 shadow-2xs space-y-2.5">

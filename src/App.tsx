@@ -14,7 +14,23 @@ import { ReelsView } from './components/ReelsView';
 import { ChatView } from './components/ChatView';
 import { ProfileView } from './components/ProfileView';
 import { FriendsModal } from './components/FriendsModal';
-import { Film, MessageCircle, Sparkles, Users } from 'lucide-react';
+import {
+  Film,
+  MessageCircle,
+  Sparkles,
+  Users,
+  MessageSquare,
+  BookOpen,
+  BarChart3,
+  Bookmark,
+  ShieldAlert,
+  User as UserIcon,
+  LogOut,
+  Compass,
+  Lock,
+  Unlock,
+  ShieldCheck
+} from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -140,7 +156,7 @@ export default function App() {
       );
       setUnreadDirectMessagesCount(totalUnread);
       setPendingFriendRequestsCount((friendsRes.pendingReceived || []).length);
-    } catch (err) {
+    } catch {
       // Silent error in background badge fetch
     }
   };
@@ -320,228 +336,585 @@ export default function App() {
     );
   }
 
+  const isAdmin = currentUser.role === 'admin';
+
+  const socialNavItems: {
+    id: MainTabType;
+    label: string;
+    subtitle: string;
+    icon: React.ComponentType<{ className?: string }>;
+    badgeCount?: number;
+  }[] = [
+    {
+      id: 'feed',
+      label: "Fil d'actualité",
+      subtitle: 'Publications & cours',
+      icon: Sparkles
+    },
+    {
+      id: 'reels',
+      label: 'Reels Vidéo',
+      subtitle: 'Vidéos courtes < 60s',
+      icon: Film
+    },
+    {
+      id: 'chat',
+      label: 'Messagerie Directe',
+      subtitle: 'Discussions privées',
+      icon: MessageCircle,
+      badgeCount: unreadDirectMessagesCount
+    }
+  ];
+
+  const collaborationNavItems: {
+    id: MainTabType;
+    label: string;
+    subtitle: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[] = [
+    {
+      id: 'forums',
+      label: 'Communautés',
+      subtitle: 'Salons & débats',
+      icon: MessageSquare
+    },
+    {
+      id: 'quizzes',
+      label: 'Quiz & Défis',
+      subtitle: 'QCM & classements',
+      icon: BookOpen
+    },
+    {
+      id: 'polls',
+      label: 'Sondages',
+      subtitle: 'Consultations & votes',
+      icon: BarChart3
+    },
+    {
+      id: 'spaces',
+      label: 'Mes Espaces',
+      subtitle: 'Ressources sauvegardées',
+      icon: Bookmark
+    }
+  ];
+
   return (
-    <div className="h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-slate-100 dark:bg-[#070d20] text-slate-900 dark:text-slate-100 flex flex-col transition-colors duration-200 relative">
+    <div className="h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-slate-100 dark:bg-[#070d20] text-slate-900 dark:text-slate-100 flex flex-row transition-colors duration-200 relative">
       
-      {/* Fixed Top Header - Hidden on mobile when inside an active chat conversation for full-screen Messenger experience */}
-      <div className={activeTab === 'chat' && isChatConversationOpen ? 'hidden md:block shrink-0' : 'block shrink-0'}>
-        <Header
-          currentUser={currentUser}
-          activeTab={activeTab}
-          canGoBack={canGoBack}
-          onGoBack={handleGoBack}
-          onTabChange={(tab) => navigateToTab(tab)}
-          onLogout={handleLogout}
-          isLiveConnected={isLiveConnected}
-          darkMode={darkMode}
-          onToggleDarkMode={toggleDarkMode}
-          onOpenDocSearch={() => setShowGlobalDocSearch(true)}
-          notifications={notifications}
-          onNotificationsChange={setNotifications}
-          notificationsEnabled={notificationsEnabled}
-          onToggleNotificationsEnabled={toggleNotificationsEnabled}
-          latestPushNotification={latestPushNotification}
-          onDismissPushNotification={() => setLatestPushNotification(null)}
-          isSlidingPanelOpen={isSlidingPanelOpen}
-          onToggleSlidingPanel={() => setIsSlidingPanelOpen((prev) => !prev)}
-          onCloseSlidingPanel={() => setIsSlidingPanelOpen(false)}
-          onOpenFriendsModal={() => setShowFriendsModal(true)}
-          unreadMessagesCount={unreadDirectMessagesCount}
-          pendingFriendRequestsCount={pendingFriendRequestsCount}
-        />
-      </div>
+      {/* PERMANENT LEFT WORKSPACE SIDEBAR (Desktop lg+) — Clear, structured navigation across all pages */}
+      <aside className="hidden lg:flex w-64 xl:w-68 shrink-0 h-full bg-white dark:bg-[#0a1124] border-r border-slate-200/80 dark:border-slate-800/80 flex-col justify-between select-none z-40">
+        
+        {/* Top Brand & Navigation Sections */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-3.5 py-4 space-y-6">
+          
+          {/* Brand Header */}
+          <div className="flex items-center justify-between px-1.5">
+            <button
+              type="button"
+              onClick={() => navigateToTab('feed')}
+              className="flex items-center space-x-2.5 text-left cursor-pointer group"
+            >
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm tracking-tight shadow-xs group-hover:bg-blue-500 transition-colors shrink-0">
+                MK
+              </div>
+              <div>
+                <div className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight leading-none">
+                  MK Réseau
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  Plateforme Collaborative
+                </div>
+              </div>
+            </button>
 
-      {/* Main Tab Content - Fixed viewport shell with vertical-only scrolling and zero horizontal wobble */}
-      <main
-        className={
-          activeTab === 'chat'
-            ? `flex-1 min-h-0 min-w-0 w-full max-w-full flex flex-col overflow-hidden ${
-                isChatConversationOpen ? 'pt-0 md:pt-16' : 'pt-16'
-              }`
-            : 'flex-1 min-h-0 min-w-0 w-full max-w-full overflow-y-auto overflow-x-hidden overscroll-x-none pt-15 sm:pt-16 pb-20'
-        }
-      >
-        {activeTab === 'feed' && (
-          <FeedView
-            currentUser={currentUser}
-            posts={posts}
-            onRefresh={loadPosts}
-            onOpenUserProfile={handleOpenUserProfile}
-            onOpenChatWithUser={handleOpenChatWithUser}
-            onNavigateTab={(tab) => navigateToTab(tab)}
-            onOpenFriendsModal={() => setShowFriendsModal(true)}
-          />
-        )}
+            <button
+              type="button"
+              onClick={() => setIsSlidingPanelOpen(true)}
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
+              title="Portail des pages"
+            >
+              <Compass className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            </button>
+          </div>
 
-        {activeTab === 'reels' && (
-          <ReelsView
-            currentUser={currentUser}
-            onOpenUserProfile={handleOpenUserProfile}
-            onOpenChatWithUser={handleOpenChatWithUser}
-            onGoBack={handleGoBack}
-          />
-        )}
-
-        {activeTab === 'chat' && (
-          <ChatView
-            currentUser={currentUser}
-            initialPartnerId={chatPartnerId}
-            onOpenUserProfile={handleOpenUserProfile}
-            onGoBack={handleGoBack}
-            onConversationStateChange={setIsChatConversationOpen}
-            onPartnerChange={setChatPartnerId}
-          />
-        )}
-
-        {activeTab === 'profile' && (
-          <ProfileView
-            targetUserId={selectedProfileUserId || currentUser.id}
-            currentUser={currentUser}
-            onUpdateCurrentUser={(updated) => {
-              setCurrentUser(updated);
-            }}
-            onOpenChatWithUser={handleOpenChatWithUser}
-            onOpenUserProfile={handleOpenUserProfile}
-            onOpenReelsView={() => navigateToTab('reels')}
-            onGoBack={handleGoBack}
-          />
-        )}
-
-        {activeTab === 'forums' && (
-          <ForumsView currentUser={currentUser} onGoBack={handleGoBack} />
-        )}
-
-        {activeTab === 'quizzes' && (
-          <QuizView currentUser={currentUser} onGoBack={handleGoBack} />
-        )}
-
-        {activeTab === 'polls' && (
-          <PollsView currentUser={currentUser} onGoBack={handleGoBack} />
-        )}
-
-        {activeTab === 'spaces' && (
-          <SpacesView
-            currentUser={currentUser}
-            allPosts={posts}
-            onRefresh={loadPosts}
-            onGoBack={handleGoBack}
-          />
-        )}
-
-        {activeTab === 'admin' && (
-          <AdminView currentUser={currentUser} onGoBack={handleGoBack} />
-        )}
-
-        {/* Modern Footer inside scrollable main (Hidden when activeTab === 'chat') */}
-        {activeTab !== 'chat' && (
-          <footer className="mt-8 bg-white dark:bg-[#0a1124] border-t border-slate-200 dark:border-blue-950 py-5 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
-            <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <p className="font-bold text-slate-800 dark:text-slate-200">
-                © {new Date().getFullYear()} MK Social • Réseau Professionnel & Collaboratif
-              </p>
-              <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-                Accueil, Messagerie instantanée, Reels courts, Quiz et Espaces de travail
-              </p>
+          {/* SECTION 1: Espace Social */}
+          <div className="space-y-1">
+            <div className="px-2.5 pb-1 text-[11px] font-bold text-slate-400 dark:text-slate-500">
+              01. Espace Social
             </div>
-          </footer>
-        )}
-      </main>
 
-      {/* Rock-solid Fixed Bottom Navigation Bar (Hidden only inside active chat conversation) */}
-      <nav
-        id="app-bottom-fixed-nav"
-        className={`fixed bottom-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0a1124]/95 backdrop-blur-xl border-t border-slate-200 dark:border-blue-950 items-center justify-around py-1 sm:py-1.5 px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-all h-16 pb-[max(0.25rem,env(safe-area-inset-bottom))] ${
-          activeTab === 'chat' && isChatConversationOpen ? 'hidden' : 'flex'
-        }`}
-      >
-        <div className="w-full max-w-lg mx-auto flex items-center justify-around">
-          <button
-            id="bottom-nav-feed"
-            onClick={() => navigateToTab('feed')}
-            className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl ${
-              activeTab === 'feed'
-                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
-                : 'text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-white'
-            }`}
-          >
-            <Sparkles className="w-5 h-5 mb-0.5" />
-            <span>Accueil</span>
-          </button>
+            {socialNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  id={`nav-btn-${item.id}`}
+                  type="button"
+                  onClick={() => navigateToTab(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <Icon
+                      className={`w-4 h-4 shrink-0 ${
+                        isActive ? 'text-white' : 'text-blue-600 dark:text-blue-400'
+                      }`}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold truncate">{item.label}</div>
+                      <div
+                        className={`text-[10px] truncate ${
+                          isActive ? 'text-blue-100' : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      >
+                        {item.subtitle}
+                      </div>
+                    </div>
+                  </div>
 
-          <button
-            id="bottom-nav-reels"
-            onClick={() => navigateToTab('reels')}
-            className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl relative ${
-              activeTab === 'reels'
-                ? 'text-rose-600 dark:text-rose-400 bg-rose-50/70 dark:bg-rose-950/40'
-                : 'text-slate-500 dark:text-slate-400 hover:text-rose-500'
-            }`}
-          >
-            <div className="relative">
-              <Film className="w-5 h-5 mb-0.5" />
-              <span className="absolute -top-1 -right-2 text-[8px] font-bold bg-rose-500 text-white rounded-full px-1">
-                &lt;60s
-              </span>
-            </div>
-            <span>Reels</span>
-          </button>
+                  {item.badgeCount !== undefined && item.badgeCount > 0 && (
+                    <span
+                      className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono tabular-nums font-bold shrink-0 ${
+                        isActive
+                          ? 'bg-white text-blue-600'
+                          : 'bg-rose-500 text-white'
+                      }`}
+                    >
+                      {item.badgeCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
 
-          <button
-            id="bottom-nav-chat"
-            onClick={() => navigateToTab('chat')}
-            className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl relative ${
-              activeTab === 'chat'
-                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
-                : 'text-slate-500 dark:text-slate-400 hover:text-blue-600'
-            }`}
-          >
-            <div className="relative">
-              <MessageCircle className="w-5 h-5 mb-0.5" />
-              {unreadDirectMessagesCount > 0 && (
-                <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
-                  {unreadDirectMessagesCount}
-                </span>
-              )}
-            </div>
-            <span>Messages</span>
-          </button>
+            {/* Network & Friends Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => setShowFriendsModal(true)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition cursor-pointer"
+            >
+              <div className="flex items-center space-x-3 min-w-0">
+                <Users className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold truncate">Réseau & Amis</div>
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                    Contacts & invitations
+                  </div>
+                </div>
+              </div>
 
-          <button
-            id="bottom-nav-friends"
-            onClick={() => setShowFriendsModal(true)}
-            className="flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-blue-600 transition rounded-xl relative"
-          >
-            <div className="relative">
-              <Users className="w-5 h-5 mb-0.5" />
               {pendingFriendRequestsCount > 0 && (
-                <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-blue-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
+                <span className="px-1.5 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-mono tabular-nums font-bold shrink-0">
                   {pendingFriendRequestsCount}
                 </span>
               )}
+            </button>
+          </div>
+
+          {/* SECTION 2: Collaboration & Savoir */}
+          <div className="space-y-1">
+            <div className="px-2.5 pb-1 text-[11px] font-bold text-slate-400 dark:text-slate-500">
+              02. Collaboration & Savoir
             </div>
-            <span>Amis</span>
-          </button>
+
+            {collaborationNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  id={`nav-btn-${item.id}`}
+                  type="button"
+                  onClick={() => navigateToTab(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
+                    isActive
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <Icon
+                      className={`w-4 h-4 shrink-0 ${
+                        isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'
+                      }`}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold truncate">{item.label}</div>
+                      <div
+                        className={`text-[10px] truncate ${
+                          isActive ? 'text-blue-100' : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      >
+                        {item.subtitle}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* SECTION 3: Compte & Supervision */}
+          <div className="space-y-1">
+            <div className="px-2.5 pb-1 text-[11px] font-bold text-slate-400 dark:text-slate-500">
+              03. Compte & Préférences
+            </div>
+
+            <button
+              id="nav-btn-profile"
+              type="button"
+              onClick={() => navigateToTab('profile')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
+                activeTab === 'profile'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70'
+              }`}
+            >
+              <UserIcon
+                className={`w-4 h-4 shrink-0 ${
+                  activeTab === 'profile' ? 'text-white' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              />
+              <div className="min-w-0">
+                <div className="text-xs font-bold truncate">Mon Profil</div>
+                <div
+                  className={`text-[10px] truncate ${
+                    activeTab === 'profile' ? 'text-blue-100' : 'text-slate-400 dark:text-slate-500'
+                  }`}
+                >
+                  Publications & confidentialité
+                </div>
+              </div>
+            </button>
+
+            {isAdmin && (
+              <button
+                id="nav-btn-admin"
+                type="button"
+                onClick={() => navigateToTab('admin')}
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
+                  activeTab === 'admin'
+                    ? 'bg-blue-800 text-white shadow-xs'
+                    : 'text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40'
+                }`}
+              >
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold truncate">Modération & Admin</div>
+                  <div
+                    className={`text-[10px] truncate ${
+                      activeTab === 'admin' ? 'text-blue-100' : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    Gestion de la plateforme
+                  </div>
+                </div>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom User Profile & Session Dock */}
+        <div className="shrink-0 p-3.5 border-t border-slate-200/80 dark:border-slate-800/80 bg-slate-50/60 dark:bg-[#080e1e] space-y-2.5">
+          <div
+            onClick={() => navigateToTab('profile')}
+            className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-white dark:hover:bg-slate-800/80 transition cursor-pointer"
+          >
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <img
+                src={currentUser.avatarUrl}
+                alt={currentUser.prenom}
+                className="w-9 h-9 rounded-full object-cover border border-blue-500 shrink-0"
+                referrerPolicy="no-referrer"
+              />
+              <div className="min-w-0">
+                <div className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center space-x-1">
+                  <span className="truncate">
+                    {currentUser.prenom} {currentUser.nom}
+                  </span>
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                </div>
+                <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center space-x-1 truncate">
+                  <span>{currentUser.promo || 'Membre'}</span>
+                  <span aria-hidden="true">·</span>
+                  {currentUser.isLocked ? (
+                    <Lock className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                  ) : (
+                    <Unlock className="w-2.5 h-2.5 text-emerald-500 shrink-0" />
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
 
           <button
-            id="bottom-nav-profile"
-            onClick={() => navigateToTab('profile')}
-            className={`flex flex-col items-center justify-center py-1 px-3 text-[11px] font-bold transition rounded-xl ${
-              activeTab === 'profile'
-                ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60'
-                : 'text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-white'
-            }`}
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center space-x-1.5 py-2 px-3 rounded-xl bg-slate-200/70 hover:bg-rose-600 hover:text-white dark:bg-slate-800 dark:hover:bg-rose-600 text-slate-700 dark:text-slate-300 text-xs font-bold transition cursor-pointer"
           >
-            <img
-              src={currentUser.avatarUrl}
-              alt={currentUser.prenom}
-              className={`w-5 h-5 rounded-full object-cover mb-0.5 border ${
-                activeTab === 'profile' ? 'border-blue-500' : 'border-slate-300 dark:border-slate-700'
-              }`}
-            />
-            <span>Profil</span>
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Déconnexion</span>
           </button>
         </div>
-      </nav>
+      </aside>
+
+      {/* RIGHT WORKSPACE VIEWPORT (Header + Main Content + Mobile Bottom Bar) */}
+      <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden relative">
+        
+        {/* Top Contextual Header - Hidden on mobile when inside an active chat conversation */}
+        <div
+          className={
+            activeTab === 'chat' && isChatConversationOpen
+              ? 'hidden md:block shrink-0'
+              : 'block shrink-0'
+          }
+        >
+          <Header
+            currentUser={currentUser}
+            activeTab={activeTab}
+            canGoBack={canGoBack}
+            onGoBack={handleGoBack}
+            onTabChange={(tab) => navigateToTab(tab)}
+            onLogout={handleLogout}
+            isLiveConnected={isLiveConnected}
+            darkMode={darkMode}
+            onToggleDarkMode={toggleDarkMode}
+            onOpenDocSearch={() => setShowGlobalDocSearch(true)}
+            notifications={notifications}
+            onNotificationsChange={setNotifications}
+            notificationsEnabled={notificationsEnabled}
+            onToggleNotificationsEnabled={toggleNotificationsEnabled}
+            latestPushNotification={latestPushNotification}
+            onDismissPushNotification={() => setLatestPushNotification(null)}
+            isSlidingPanelOpen={isSlidingPanelOpen}
+            onToggleSlidingPanel={() => setIsSlidingPanelOpen((prev) => !prev)}
+            onCloseSlidingPanel={() => setIsSlidingPanelOpen(false)}
+            onOpenFriendsModal={() => setShowFriendsModal(true)}
+            unreadMessagesCount={unreadDirectMessagesCount}
+            pendingFriendRequestsCount={pendingFriendRequestsCount}
+          />
+        </div>
+
+        {/* Main Tab Content */}
+        <main
+          className={
+            activeTab === 'chat'
+              ? 'flex-1 min-h-0 min-w-0 w-full max-w-full flex flex-col overflow-hidden'
+              : 'flex-1 min-h-0 min-w-0 w-full max-w-full overflow-y-auto overflow-x-hidden overscroll-x-none pb-20 lg:pb-8'
+          }
+        >
+          {activeTab === 'feed' && (
+            <FeedView
+              currentUser={currentUser}
+              posts={posts}
+              onRefresh={loadPosts}
+              onOpenUserProfile={handleOpenUserProfile}
+              onOpenChatWithUser={handleOpenChatWithUser}
+              onNavigateTab={(tab) => navigateToTab(tab)}
+              onOpenFriendsModal={() => setShowFriendsModal(true)}
+            />
+          )}
+
+          {activeTab === 'reels' && (
+            <ReelsView
+              currentUser={currentUser}
+              onOpenUserProfile={handleOpenUserProfile}
+              onOpenChatWithUser={handleOpenChatWithUser}
+              onGoBack={handleGoBack}
+            />
+          )}
+
+          {activeTab === 'chat' && (
+            <ChatView
+              currentUser={currentUser}
+              initialPartnerId={chatPartnerId}
+              onOpenUserProfile={handleOpenUserProfile}
+              onGoBack={handleGoBack}
+              onConversationStateChange={setIsChatConversationOpen}
+              onPartnerChange={setChatPartnerId}
+            />
+          )}
+
+          {activeTab === 'profile' && (
+            <ProfileView
+              targetUserId={selectedProfileUserId || currentUser.id}
+              currentUser={currentUser}
+              onUpdateCurrentUser={(updated) => {
+                setCurrentUser(updated);
+              }}
+              onOpenChatWithUser={handleOpenChatWithUser}
+              onOpenUserProfile={handleOpenUserProfile}
+              onOpenReelsView={() => navigateToTab('reels')}
+              onGoBack={handleGoBack}
+            />
+          )}
+
+          {activeTab === 'forums' && (
+            <ForumsView currentUser={currentUser} onGoBack={handleGoBack} />
+          )}
+
+          {activeTab === 'quizzes' && (
+            <QuizView currentUser={currentUser} onGoBack={handleGoBack} />
+          )}
+
+          {activeTab === 'polls' && (
+            <PollsView currentUser={currentUser} onGoBack={handleGoBack} />
+          )}
+
+          {activeTab === 'spaces' && (
+            <SpacesView
+              currentUser={currentUser}
+              allPosts={posts}
+              onRefresh={loadPosts}
+              onGoBack={handleGoBack}
+            />
+          )}
+
+          {activeTab === 'admin' && (
+            <AdminView currentUser={currentUser} onGoBack={handleGoBack} />
+          )}
+
+          {/* Clean Footer inside scrollable main (Hidden when activeTab === 'chat') */}
+          {activeTab !== 'chat' && (
+            <footer className="mt-10 border-t border-slate-200/80 dark:border-slate-800/80 py-5 text-xs text-slate-500 dark:text-slate-400">
+              <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p className="font-semibold text-slate-700 dark:text-slate-300">
+                  © {new Date().getFullYear()} MK Réseau · Plateforme Sociale & Collaborative
+                </p>
+                <div className="flex items-center space-x-3 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => navigateToTab('feed')}
+                    className="hover:text-blue-600 transition cursor-pointer"
+                  >
+                    Fil d'actualité
+                  </button>
+                  <span aria-hidden="true">·</span>
+                  <button
+                    type="button"
+                    onClick={() => navigateToTab('forums')}
+                    className="hover:text-blue-600 transition cursor-pointer"
+                  >
+                    Communautés
+                  </button>
+                  <span aria-hidden="true">·</span>
+                  <button
+                    type="button"
+                    onClick={() => navigateToTab('quizzes')}
+                    className="hover:text-blue-600 transition cursor-pointer"
+                  >
+                    Quiz
+                  </button>
+                  <span aria-hidden="true">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsSlidingPanelOpen(true)}
+                    className="hover:text-blue-600 transition cursor-pointer"
+                  >
+                    Portail des pages
+                  </button>
+                </div>
+              </div>
+            </footer>
+          )}
+        </main>
+
+        {/* Mobile-Only Bottom Navigation Bar (Hidden on Desktop lg+ where the Left Sidebar is permanent) */}
+        <nav
+          id="app-bottom-fixed-nav"
+          className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 w-full bg-white/95 dark:bg-[#0a1124]/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800 items-center justify-around py-1 px-2 h-15 pb-[max(0.25rem,env(safe-area-inset-bottom))] ${
+            activeTab === 'chat' && isChatConversationOpen ? 'hidden' : 'flex'
+          }`}
+        >
+          <div className="w-full max-w-md mx-auto grid grid-cols-5 items-center">
+            <button
+              id="bottom-nav-feed"
+              type="button"
+              onClick={() => navigateToTab('feed')}
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl ${
+                activeTab === 'feed'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <Sparkles className="w-5 h-5 mb-0.5" />
+              <span>Accueil</span>
+            </button>
+
+            <button
+              id="bottom-nav-reels"
+              type="button"
+              onClick={() => navigateToTab('reels')}
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl ${
+                activeTab === 'reels'
+                  ? 'text-rose-600 dark:text-rose-400'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <Film className="w-5 h-5 mb-0.5" />
+              <span>Reels</span>
+            </button>
+
+            <button
+              id="bottom-nav-chat"
+              type="button"
+              onClick={() => navigateToTab('chat')}
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl relative ${
+                activeTab === 'chat'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <div className="relative">
+                <MessageCircle className="w-5 h-5 mb-0.5" />
+                {unreadDirectMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-2 min-w-4 h-4 bg-rose-500 text-white text-[9px] font-mono tabular-nums font-bold rounded-full flex items-center justify-center px-1">
+                    {unreadDirectMessagesCount}
+                  </span>
+                )}
+              </div>
+              <span>Messages</span>
+            </button>
+
+            <button
+              id="bottom-nav-hub"
+              type="button"
+              onClick={() => setIsSlidingPanelOpen(true)}
+              className="flex flex-col items-center justify-center py-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-blue-600 transition rounded-xl"
+            >
+              <Compass className="w-5 h-5 mb-0.5" />
+              <span>Portail</span>
+            </button>
+
+            <button
+              id="bottom-nav-profile"
+              type="button"
+              onClick={() => navigateToTab('profile')}
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl ${
+                activeTab === 'profile'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              <img
+                src={currentUser.avatarUrl}
+                alt={currentUser.prenom}
+                className={`w-5 h-5 rounded-full object-cover mb-0.5 border ${
+                  activeTab === 'profile'
+                    ? 'border-blue-500'
+                    : 'border-slate-300 dark:border-slate-700'
+                }`}
+                referrerPolicy="no-referrer"
+              />
+              <span>Profil</span>
+            </button>
+          </div>
+        </nav>
+      </div>
 
       {/* Friends & Invitations Modal */}
       <FriendsModal
@@ -565,7 +938,6 @@ export default function App() {
         onOpenChatWithUser={handleOpenChatWithUser}
         onNavigateTab={(tab) => navigateToTab(tab)}
       />
-
     </div>
   );
 }

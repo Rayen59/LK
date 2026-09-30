@@ -5,6 +5,49 @@ import { AppDatabase, User } from "../src/types";
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 
+function ensureAdminAccount(users: User[]): boolean {
+  const adminEmail = "admin189@gmail.com";
+  const adminPass = "admin189";
+  const existingAdmin = users.find((u) => u.email.toLowerCase() === adminEmail);
+
+  if (!existingAdmin) {
+    users.push({
+      id: "usr_admin_mk_master",
+      nom: "Administration",
+      prenom: "MK",
+      email: adminEmail,
+      password: adminPass,
+      avatarUrl: "https://api.dicebear.com/7.x/initials/svg?seed=MK%20Admin&backgroundColor=1e3a8a",
+      promo: "Direction & Modération",
+      bio: "Compte officiel de supervision et de modération de la plateforme MK.",
+      role: "admin",
+      isLocked: false,
+      friends: [],
+      friendRequestsSent: [],
+      friendRequestsReceived: [],
+      blockedUsers: [],
+      createdAt: new Date().toISOString()
+    });
+    return true;
+  } else {
+    let modified = false;
+    if (existingAdmin.role !== "admin") {
+      existingAdmin.role = "admin";
+      modified = true;
+    }
+    if (existingAdmin.password !== adminPass) {
+      existingAdmin.password = adminPass;
+      modified = true;
+    }
+    if (existingAdmin.isBanned) {
+      existingAdmin.isBanned = false;
+      existingAdmin.banUntil = null;
+      modified = true;
+    }
+    return modified;
+  }
+}
+
 // Ensure clean database without any mock/dummy data
 function initDatabase(): AppDatabase {
   if (!fs.existsSync(DATA_DIR)) {
@@ -22,10 +65,12 @@ function initDatabase(): AppDatabase {
     quizzes: [],
     quizSubmissions: [],
     polls: [],
-    notifications: []
+    notifications: [],
+    reports: []
   };
 
   if (!fs.existsSync(DB_FILE)) {
+    ensureAdminAccount(blankDb.users);
     fs.writeFileSync(DB_FILE, JSON.stringify(blankDb, null, 2), "utf-8");
     return blankDb;
   }
@@ -43,7 +88,9 @@ function initDatabase(): AppDatabase {
       isLocked: Boolean(u.isLocked)
     }));
 
-    return {
+    const adminUpdated = ensureAdminAccount(users);
+
+    const loadedDb: AppDatabase = {
       users,
       posts: parsed.posts || [],
       reels: parsed.reels || [],
@@ -54,10 +101,22 @@ function initDatabase(): AppDatabase {
       quizzes: parsed.quizzes || [],
       quizSubmissions: parsed.quizSubmissions || [],
       polls: parsed.polls || [],
-      notifications: parsed.notifications || []
+      notifications: parsed.notifications || [],
+      reports: parsed.reports || []
     };
+
+    if (adminUpdated || !parsed.reports) {
+      try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(loadedDb, null, 2), "utf-8");
+      } catch {
+        // Ignore write error on init
+      }
+    }
+
+    return loadedDb;
   } catch (err) {
     console.error("Error reading db.json, reinitializing blank db", err);
+    ensureAdminAccount(blankDb.users);
     fs.writeFileSync(DB_FILE, JSON.stringify(blankDb, null, 2), "utf-8");
     return blankDb;
   }
@@ -86,7 +145,7 @@ export function checkUserBanStatus(user: User): { isBanned: boolean; message?: s
   if (user.banUntil === "permanent") {
     return {
       isBanned: true,
-      message: "Votre compte a été banni définitivement par l'administration de MK."
+      message: `Votre compte a été banni définitivement par l'administration de MK.${user.banReason ? ` Motif : ${user.banReason}` : ""}`
     };
   }
   if (user.banUntil) {
@@ -94,7 +153,7 @@ export function checkUserBanStatus(user: User): { isBanned: boolean; message?: s
     if (banTime > Date.now()) {
       return {
         isBanned: true,
-        message: `Votre compte est temporairement suspendu par l'administration jusqu'au ${new Date(user.banUntil).toLocaleString("fr-FR")}.`
+        message: `Votre compte est temporairement suspendu par l'administration jusqu'au ${new Date(user.banUntil).toLocaleString("fr-FR")}.${user.banReason ? ` Motif : ${user.banReason}` : ""}`
       };
     } else {
       // Ban has expired!

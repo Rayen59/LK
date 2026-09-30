@@ -14,6 +14,7 @@ import { ReelsView } from './components/ReelsView';
 import { ChatView } from './components/ChatView';
 import { ProfileView } from './components/ProfileView';
 import { FriendsModal } from './components/FriendsModal';
+import { MenuPageView } from './components/SlidingPanel';
 import {
   Film,
   MessageCircle,
@@ -26,7 +27,7 @@ import {
   ShieldAlert,
   User as UserIcon,
   LogOut,
-  Compass,
+  Menu,
   Lock,
   Unlock,
   ShieldCheck
@@ -42,7 +43,6 @@ export default function App() {
   const [latestPushNotification, setLatestPushNotification] = useState<AppNotification | null>(null);
   const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [showGlobalDocSearch, setShowGlobalDocSearch] = useState(false);
-  const [isSlidingPanelOpen, setIsSlidingPanelOpen] = useState(false);
 
   // Social Media Features State
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
@@ -257,7 +257,6 @@ export default function App() {
       setChatPartnerId(null);
     }
     setActiveTab(tab);
-    setIsSlidingPanelOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -294,7 +293,6 @@ export default function App() {
     api.auth.logout();
     setCurrentUser(null);
     setActiveTab('feed');
-    setIsSlidingPanelOpen(false);
   };
 
   const handleOpenUserProfile = (userId: string) => {
@@ -380,8 +378,8 @@ export default function App() {
     },
     {
       id: 'quizzes',
-      label: 'Quiz & Défis',
-      subtitle: 'QCM & classements',
+      label: 'Quiz & Studio IA',
+      subtitle: 'PDF, QCM & classements',
       icon: BookOpen
     },
     {
@@ -400,13 +398,10 @@ export default function App() {
 
   return (
     <div className="h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-slate-100 dark:bg-[#070d20] text-slate-900 dark:text-slate-100 flex flex-row transition-colors duration-200 relative">
-      
-      {/* PERMANENT LEFT WORKSPACE SIDEBAR (Desktop lg+) — Clear, structured navigation across all pages */}
+      {/* PERMANENT LEFT WORKSPACE SIDEBAR (Desktop lg+) */}
       <aside className="hidden lg:flex w-64 xl:w-68 shrink-0 h-full bg-white dark:bg-[#0a1124] border-r border-slate-200/80 dark:border-slate-800/80 flex-col justify-between select-none z-40">
-        
         {/* Top Brand & Navigation Sections */}
         <div className="flex-1 min-h-0 overflow-y-auto px-3.5 py-4 space-y-6">
-          
           {/* Brand Header */}
           <div className="flex items-center justify-between px-1.5">
             <button
@@ -414,7 +409,7 @@ export default function App() {
               onClick={() => navigateToTab('feed')}
               className="flex items-center space-x-2.5 text-left cursor-pointer group"
             >
-              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm tracking-tight shadow-xs group-hover:bg-blue-500 transition-colors shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-sm tracking-tight shadow-2xs group-hover:bg-blue-500 transition-colors shrink-0">
                 MK
               </div>
               <div>
@@ -429,11 +424,15 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() => setIsSlidingPanelOpen(true)}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer"
-              title="Portail des pages"
+              onClick={() => navigateToTab('menu')}
+              className={`p-2 rounded-xl transition cursor-pointer ${
+                activeTab === 'menu'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
+              }`}
+              title="Menu (3 tirets)"
             >
-              <Compass className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <Menu className="w-4 h-4" />
             </button>
           </div>
 
@@ -454,7 +453,7 @@ export default function App() {
                   onClick={() => navigateToTab(item.id)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-2xs'
                       : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70'
                   }`}
                 >
@@ -532,7 +531,7 @@ export default function App() {
                   onClick={() => navigateToTab(item.id)}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-2xs'
                       : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70'
                   }`}
                 >
@@ -570,7 +569,7 @@ export default function App() {
               onClick={() => navigateToTab('profile')}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
                 activeTab === 'profile'
-                  ? 'bg-blue-600 text-white shadow-xs'
+                  ? 'bg-blue-600 text-white shadow-2xs'
                   : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70'
               }`}
             >
@@ -591,6 +590,33 @@ export default function App() {
               </div>
             </button>
 
+            <button
+              id="nav-btn-menu"
+              type="button"
+              onClick={() => navigateToTab('menu')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
+                activeTab === 'menu'
+                  ? 'bg-blue-600 text-white shadow-2xs'
+                  : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70'
+              }`}
+            >
+              <Menu
+                className={`w-4 h-4 shrink-0 ${
+                  activeTab === 'menu' ? 'text-white' : 'text-slate-500 dark:text-slate-400'
+                }`}
+              />
+              <div className="min-w-0">
+                <div className="text-xs font-bold truncate">Menu & Raccourcis</div>
+                <div
+                  className={`text-[10px] truncate ${
+                    activeTab === 'menu' ? 'text-blue-100' : 'text-slate-400 dark:text-slate-500'
+                  }`}
+                >
+                  Outils, thèmes & paramètres
+                </div>
+              </div>
+            </button>
+
             {isAdmin && (
               <button
                 id="nav-btn-admin"
@@ -598,7 +624,7 @@ export default function App() {
                 onClick={() => navigateToTab('admin')}
                 className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-left transition cursor-pointer ${
                   activeTab === 'admin'
-                    ? 'bg-blue-800 text-white shadow-xs'
+                    ? 'bg-blue-800 text-white shadow-2xs'
                     : 'text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40'
                 }`}
               >
@@ -664,7 +690,6 @@ export default function App() {
 
       {/* RIGHT WORKSPACE VIEWPORT (Header + Main Content + Mobile Bottom Bar) */}
       <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden relative">
-        
         {/* Top Contextual Header - Hidden on mobile when inside an active chat conversation */}
         <div
           className={
@@ -690,9 +715,6 @@ export default function App() {
             onToggleNotificationsEnabled={toggleNotificationsEnabled}
             latestPushNotification={latestPushNotification}
             onDismissPushNotification={() => setLatestPushNotification(null)}
-            isSlidingPanelOpen={isSlidingPanelOpen}
-            onToggleSlidingPanel={() => setIsSlidingPanelOpen((prev) => !prev)}
-            onCloseSlidingPanel={() => setIsSlidingPanelOpen(false)}
             onOpenFriendsModal={() => setShowFriendsModal(true)}
             unreadMessagesCount={unreadDirectMessagesCount}
             pendingFriendRequestsCount={pendingFriendRequestsCount}
@@ -778,6 +800,25 @@ export default function App() {
             <AdminView currentUser={currentUser} onGoBack={handleGoBack} />
           )}
 
+          {activeTab === 'menu' && (
+            <MenuPageView
+              currentUser={currentUser}
+              activeTab={activeTab}
+              onTabChange={(tab) => navigateToTab(tab)}
+              onGoBack={handleGoBack}
+              onLogout={handleLogout}
+              darkMode={darkMode}
+              onToggleDarkMode={toggleDarkMode}
+              notificationsEnabled={notificationsEnabled}
+              onToggleNotificationsEnabled={toggleNotificationsEnabled}
+              onOpenDocSearch={() => setShowGlobalDocSearch(true)}
+              onOpenFriendsModal={() => setShowFriendsModal(true)}
+              pendingFriendRequestsCount={pendingFriendRequestsCount}
+              onUpdateCurrentUser={(updated) => setCurrentUser(updated)}
+              onRefreshPosts={loadPosts}
+            />
+          )}
+
           {/* Clean Footer inside scrollable main (Hidden when activeTab === 'chat') */}
           {activeTab !== 'chat' && (
             <footer className="mt-10 border-t border-slate-200/80 dark:border-slate-800/80 py-5 text-xs text-slate-500 dark:text-slate-400">
@@ -786,14 +827,6 @@ export default function App() {
                   © {new Date().getFullYear()} MK Réseau · Plateforme Sociale & Collaborative
                 </p>
                 <div className="flex items-center space-x-3 text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => navigateToTab('feed')}
-                    className="hover:text-blue-600 transition cursor-pointer"
-                  >
-                    Fil d'actualité
-                  </button>
-                  <span aria-hidden="true">·</span>
                   <button
                     type="button"
                     onClick={() => navigateToTab('forums')}
@@ -807,15 +840,15 @@ export default function App() {
                     onClick={() => navigateToTab('quizzes')}
                     className="hover:text-blue-600 transition cursor-pointer"
                   >
-                    Quiz
+                    Quiz IA
                   </button>
                   <span aria-hidden="true">·</span>
                   <button
                     type="button"
-                    onClick={() => setIsSlidingPanelOpen(true)}
+                    onClick={() => navigateToTab('menu')}
                     className="hover:text-blue-600 transition cursor-pointer"
                   >
-                    Portail des pages
+                    Menu
                   </button>
                 </div>
               </div>
@@ -835,7 +868,7 @@ export default function App() {
               id="bottom-nav-feed"
               type="button"
               onClick={() => navigateToTab('feed')}
-              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl ${
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl cursor-pointer ${
                 activeTab === 'feed'
                   ? 'text-blue-600 dark:text-blue-400'
                   : 'text-slate-500 dark:text-slate-400'
@@ -849,7 +882,7 @@ export default function App() {
               id="bottom-nav-reels"
               type="button"
               onClick={() => navigateToTab('reels')}
-              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl ${
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl cursor-pointer ${
                 activeTab === 'reels'
                   ? 'text-rose-600 dark:text-rose-400'
                   : 'text-slate-500 dark:text-slate-400'
@@ -863,7 +896,7 @@ export default function App() {
               id="bottom-nav-chat"
               type="button"
               onClick={() => navigateToTab('chat')}
-              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl relative ${
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl relative cursor-pointer ${
                 activeTab === 'chat'
                   ? 'text-blue-600 dark:text-blue-400'
                   : 'text-slate-500 dark:text-slate-400'
@@ -881,20 +914,10 @@ export default function App() {
             </button>
 
             <button
-              id="bottom-nav-hub"
-              type="button"
-              onClick={() => setIsSlidingPanelOpen(true)}
-              className="flex flex-col items-center justify-center py-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:text-blue-600 transition rounded-xl"
-            >
-              <Compass className="w-5 h-5 mb-0.5" />
-              <span>Portail</span>
-            </button>
-
-            <button
               id="bottom-nav-profile"
               type="button"
               onClick={() => navigateToTab('profile')}
-              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl ${
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl cursor-pointer ${
                 activeTab === 'profile'
                   ? 'text-blue-600 dark:text-blue-400'
                   : 'text-slate-500 dark:text-slate-400'
@@ -911,6 +934,21 @@ export default function App() {
                 referrerPolicy="no-referrer"
               />
               <span>Profil</span>
+            </button>
+
+            {/* Facebook-style 3-Bars Menu Page Button */}
+            <button
+              id="bottom-nav-menu"
+              type="button"
+              onClick={() => navigateToTab('menu')}
+              className={`flex flex-col items-center justify-center py-1 text-[10px] font-bold transition rounded-xl cursor-pointer ${
+                activeTab === 'menu'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-blue-600'
+              }`}
+            >
+              <Menu className="w-5 h-5 mb-0.5" />
+              <span>Menu</span>
             </button>
           </div>
         </nav>

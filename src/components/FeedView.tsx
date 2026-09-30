@@ -35,7 +35,8 @@ import {
   MessageSquare,
   BookOpen,
   BarChart3,
-  ShieldCheck
+  ShieldCheck,
+  Flag
 } from 'lucide-react';
 
 interface FeedViewProps {
@@ -97,12 +98,58 @@ export const FeedView: React.FC<FeedViewProps> = ({
   // Lightbox for feed images
   const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string } | null>(null);
 
+  // Content Reporting state (post or comment)
+  const [reportTarget, setReportTarget] = useState<{
+    targetType: 'post' | 'comment';
+    targetId: string;
+    parentPostId?: string;
+    authorName: string;
+    excerpt: string;
+  } | null>(null);
+  const [reportReason, setReportReason] = useState('Contenu inapproprié ou offensant');
+  const [reportDetails, setReportDetails] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+
   const [toastError, setToastError] = useState<string | null>(null);
   const [toastSuccess, setToastSuccess] = useState<string | null>(null);
 
   const showErrorToast = (msg: string) => {
     setToastError(msg);
     setTimeout(() => setToastError(null), 4000);
+  };
+
+  const handleSubmitReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reportTarget) return;
+    setSubmittingReport(true);
+    try {
+      const res = await api.admin.submitReport({
+        targetType: reportTarget.targetType,
+        targetId: reportTarget.targetId,
+        parentPostId: reportTarget.parentPostId,
+        reason: reportReason,
+        details: reportDetails.trim() || undefined
+      });
+      setReportTarget(null);
+      setReportDetails('');
+      setToastSuccess(res.message || "Signalement envoyé à l'administration.");
+      setTimeout(() => setToastSuccess(null), 4000);
+    } catch (err: any) {
+      showErrorToast(err.message || "Erreur lors de l'envoi du signalement.");
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    try {
+      await api.posts.deleteComment(postId, commentId);
+      onRefresh();
+      setToastSuccess('Commentaire supprimé.');
+      setTimeout(() => setToastSuccess(null), 3000);
+    } catch (err: any) {
+      showErrorToast(err.message || 'Impossible de supprimer ce commentaire.');
+    }
   };
 
   // Load random friend suggestions and pending friend requests
@@ -690,6 +737,24 @@ export const FeedView: React.FC<FeedViewProps> = ({
                                 <span>Classer dans un espace</span>
                               </button>
 
+                              {!isAuthor && (
+                                <button
+                                  onClick={() => {
+                                    setReportTarget({
+                                      targetType: 'post',
+                                      targetId: post.id,
+                                      authorName: post.authorName,
+                                      excerpt: (post.content || 'Publication multimédia').slice(0, 80)
+                                    });
+                                    setOpenMenuPostId(null);
+                                  }}
+                                  className="w-full flex items-center space-x-2 px-3 py-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-semibold transition cursor-pointer"
+                                >
+                                  <Flag className="w-3.5 h-3.5 text-amber-500" />
+                                  <span>Signaler la publication</span>
+                                </button>
+                              )}
+
                               {canManage && (
                                 <>
                                   {post.attachments?.some((a) => a.type === 'audio') && (
@@ -1001,20 +1066,56 @@ export const FeedView: React.FC<FeedViewProps> = ({
 
                                           {!currentUser.isRestricted && (
                                             <div className="mt-1.5 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                              <button
-                                                type="button"
-                                                onClick={() =>
-                                                  setReplyingTo({
-                                                    postId: post.id,
-                                                    commentId: com.id,
-                                                    userName: com.userName
-                                                  })
-                                                }
-                                                className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center space-x-1 transition cursor-pointer"
-                                              >
-                                                <Reply className="w-3 h-3" />
-                                                <span>Répondre</span>
-                                              </button>
+                                              <div className="flex items-center space-x-3">
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    setReplyingTo({
+                                                      postId: post.id,
+                                                      commentId: com.id,
+                                                      userName: com.userName
+                                                    })
+                                                  }
+                                                  className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center space-x-1 transition cursor-pointer"
+                                                >
+                                                  <Reply className="w-3 h-3" />
+                                                  <span>Répondre</span>
+                                                </button>
+
+                                                {com.userId !== currentUser.id && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                      setReportTarget({
+                                                        targetType: 'comment',
+                                                        targetId: com.id,
+                                                        parentPostId: post.id,
+                                                        authorName: com.userName,
+                                                        excerpt: com.content.slice(0, 80)
+                                                      })
+                                                    }
+                                                    className="text-[11px] font-semibold text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 flex items-center space-x-1 transition cursor-pointer"
+                                                    title="Signaler ce commentaire à l'administration"
+                                                  >
+                                                    <Flag className="w-3 h-3" />
+                                                    <span>Signaler</span>
+                                                  </button>
+                                                )}
+
+                                                {(com.userId === currentUser.id ||
+                                                  post.authorId === currentUser.id ||
+                                                  currentUser.role === 'admin') && (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteComment(post.id, com.id)}
+                                                    className="text-[11px] font-semibold text-slate-400 hover:text-rose-600 flex items-center space-x-1 transition cursor-pointer"
+                                                  >
+                                                    <Trash2 className="w-3 h-3" />
+                                                    <span>Supprimer</span>
+                                                  </button>
+                                                )}
+                                              </div>
+
                                               {replies.length > 0 && (
                                                 <span className="text-[10px] text-slate-400">
                                                   {replies.length} réponse
@@ -1440,6 +1541,106 @@ export const FeedView: React.FC<FeedViewProps> = ({
                 {deletingAttachment ? 'Suppression...' : 'Confirmer'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* REPORT CONTENT MODAL (Post or Comment) */}
+      {reportTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-[#0f172a] rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <Flag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    Signaler {reportTarget.targetType === 'post' ? 'cette publication' : 'ce commentaire'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Auteur : {reportTarget.authorName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReportTarget(null)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mb-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 italic line-clamp-2">
+              « {reportTarget.excerpt} »
+            </div>
+
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Motif du signalement :
+                </label>
+                <div className="space-y-1.5">
+                  {[
+                    'Contenu inapproprié ou offensant',
+                    'Harcèlement ou intimidation',
+                    'Discours haineux ou intolérance',
+                    'Spam ou publicité indésirable',
+                    'Fausses informations'
+                  ].map((reasonOption) => (
+                    <label
+                      key={reasonOption}
+                      className={`flex items-center space-x-2.5 p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition ${
+                        reportReason === reasonOption
+                          ? 'bg-amber-50 dark:bg-amber-950/50 border-amber-400 text-amber-900 dark:text-amber-200'
+                          : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="reportReason"
+                        value={reasonOption}
+                        checked={reportReason === reasonOption}
+                        onChange={() => setReportReason(reasonOption)}
+                        className="accent-amber-600"
+                      />
+                      <span>{reasonOption}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Précisions supplémentaires (facultatif) :
+                </label>
+                <textarea
+                  rows={2}
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Expliquez brièvement le problème à l'administration..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReportTarget(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingReport}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold shadow-2xs transition cursor-pointer disabled:opacity-50"
+                >
+                  {submittingReport ? 'Envoi...' : "Envoyer à l'administration"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

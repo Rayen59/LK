@@ -333,7 +333,7 @@ authRouter.post("/delete-account", (req: Request, res: Response) => {
   });
 });
 
-// Update profile
+// Update profile (with 14-day cooldown on profile name change)
 authRouter.put("/profile", (req: Request, res: Response) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
   const user = db.users.find((u) => u.id === token);
@@ -343,15 +343,246 @@ authRouter.put("/profile", (req: Request, res: Response) => {
   }
 
   const { nom, prenom, avatarUrl, promo, bio } = req.body;
-  if (nom) user.nom = nom;
-  if (prenom) user.prenom = prenom;
-  if (avatarUrl) user.avatarUrl = avatarUrl;
+  const nextNom = nom !== undefined ? String(nom).trim() : user.nom;
+  const nextPrenom = prenom !== undefined ? String(prenom).trim() : user.prenom;
+
+  const isNameChanged =
+    (nextNom && nextNom !== user.nom) || (nextPrenom && nextPrenom !== user.prenom);
+
+  if (isNameChanged) {
+    if (!nextPrenom || !nextNom) {
+      res.status(400).json({ error: "Le prénom et le nom ne peuvent pas être vides." });
+      return;
+    }
+
+    const COOLDOWN_DAYS = 14;
+    const COOLDOWN_MS = COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+
+    if (user.lastNameChangeAt && user.role !== "admin") {
+      const lastChangeMs = new Date(user.lastNameChangeAt).getTime();
+      const elapsed = Date.now() - lastChangeMs;
+      if (elapsed < COOLDOWN_MS) {
+        const remainingMs = COOLDOWN_MS - elapsed;
+        const remainingDays = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+        const nextAllowedDate = new Date(lastChangeMs + COOLDOWN_MS).toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        });
+        res.status(400).json({
+          error: `Vous ne pouvez modifier votre nom de profil qu'une seule fois tous les 14 jours. Prochaine modification possible dans ${remainingDays} jour(s) (le ${nextAllowedDate}).`
+        });
+        return;
+      }
+    }
+
+    user.prenom = nextPrenom;
+    user.nom = nextNom;
+    user.lastNameChangeAt = new Date().toISOString();
+
+    // Propagate new full name across user's posts, comments, reels, quizzes, and messages
+    const fullName = `${user.prenom} ${user.nom}`;
+    db.posts.forEach((p) => {
+      if (p.authorId === user.id) p.authorName = fullName;
+      (p.comments || []).forEach((c) => {
+        if (c.userId === user.id) c.userName = fullName;
+      });
+    });
+    db.reels.forEach((r) => {
+      if (r.authorId === user.id) r.authorName = fullName;
+      (r.comments || []).forEach((c) => {
+        if (c.userId === user.id) c.userName = fullName;
+      });
+    });
+    db.directMessages.forEach((m) => {
+      if (m.senderId === user.id) m.senderName = fullName;
+    });
+  }
+
+  if (avatarUrl) {
+    user.avatarUrl = avatarUrl;
+    db.posts.forEach((p) => {
+      if (p.authorId === user.id) p.authorAvatar = avatarUrl;
+      (p.comments || []).forEach((c) => {
+        if (c.userId === user.id) c.userAvatar = avatarUrl;
+      });
+    });
+  }
   if (promo) user.promo = promo;
   if (bio !== undefined) user.bio = bio;
 
   saveDatabase();
   const { password: _, ...safeUser } = user;
-  res.json({ user: safeUser });
+  res.json({
+    user: safeUser,
+    message: isNameChanged
+      ? "Votre nom de profil a été mis à jour (prochaine modification possible dans 14 jours)."
+      : "Vos informations de profil ont été mises à jour."
+  });
+});
+
+// Change password (authenticated user)
+authRouter.post("/change-password", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non autorisé" });
+    return;
+  }
+
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({ error: "Veuillez renseigner votre mot de passe actuel et le nouveau mot de passe." });
+    return;
+  }
+
+  if (user.password !== String(currentPassword)) {
+    res.status(400).json({ error: "Votre mot de passe actuel est incorrect." });
+    return;
+  }
+
+  if (String(newPassword).length < 6) {
+    res.status(400).json({ error: "Le nouveau mot de passe doit contenir au moins 6 caractères." });
+    return;
+  }
+
+  if (String(newPassword) === String(currentPassword)) {
+    res.status(400).json({ error: "Le nouveau mot de passe doit être différent de l'ancien." });
+    return;
+  }
+
+  user.password = String(newPassword);
+  saveDatabase();
+
+  res.json({
+    success: true,
+    message: "Votre mot de passe a été modifié avec succès."
+  });
+});
+
+// Get user activity log (likes, comments, shared posts, reels, quizzes)
+authRouter.get("/activity", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non autorisé" });
+    return;
+  }
+
+  const likedPosts = db.posts
+    .filter((p) => (p.likes || []).includes(user.id))
+    .map((p) => ({
+      id: p.id,
+      type: "post" as const,
+      authorId: p.authorId,
+      authorName: p.authorName,
+      authorAvatar: p.authorAvatar,
+      content: p.content,
+      attachmentsCount: (p.attachments || []).length,
+      likesCount: (p.likes || []).length,
+      commentsCount: (p.comments || []).length,
+      createdAt: p.createdAt
+    }));
+
+  const likedReels = db.reels
+    .filter((r) => (r.likes || []).includes(user.id))
+    .map((r) => ({
+      id: r.id,
+      type: "reel" as const,
+      authorId: r.authorId,
+      authorName: r.authorName,
+      authorAvatar: r.authorAvatar,
+      caption: r.caption,
+      likesCount: (r.likes || []).length,
+      createdAt: r.createdAt
+    }));
+
+  const myComments: Array<{
+    commentId: string;
+    postId: string;
+    targetType: "post" | "reel";
+    postAuthorName: string;
+    postExcerpt: string;
+    content: string;
+    createdAt: string;
+  }> = [];
+
+  db.posts.forEach((p) => {
+    (p.comments || []).forEach((c) => {
+      if (c.userId === user.id) {
+        myComments.push({
+          commentId: c.id,
+          postId: p.id,
+          targetType: "post",
+          postAuthorName: p.authorName,
+          postExcerpt: (p.content || "Publication multimédia").slice(0, 90),
+          content: c.content,
+          createdAt: c.createdAt
+        });
+      }
+    });
+  });
+
+  db.reels.forEach((r) => {
+    (r.comments || []).forEach((c) => {
+      if (c.userId === user.id) {
+        myComments.push({
+          commentId: c.id,
+          postId: r.id,
+          targetType: "reel",
+          postAuthorName: r.authorName,
+          postExcerpt: (r.caption || "Reel vidéo").slice(0, 90),
+          content: c.content,
+          createdAt: c.createdAt
+        });
+      }
+    });
+  });
+
+  myComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const myPosts = db.posts
+    .filter((p) => p.authorId === user.id)
+    .map((p) => ({
+      id: p.id,
+      content: p.content,
+      tags: p.tags || [],
+      attachments: p.attachments || [],
+      likesCount: (p.likes || []).length,
+      commentsCount: (p.comments || []).length,
+      createdAt: p.createdAt
+    }));
+
+  const myReels = db.reels
+    .filter((r) => r.authorId === user.id)
+    .map((r) => ({
+      id: r.id,
+      caption: r.caption,
+      duration: r.duration,
+      likesCount: (r.likes || []).length,
+      commentsCount: (r.comments || []).length,
+      createdAt: r.createdAt
+    }));
+
+  const myQuizzes = db.quizzes
+    .filter((q) => q.authorId === user.id)
+    .map((q) => ({
+      id: q.id,
+      title: q.title,
+      subject: q.subject,
+      questionsCount: (q.questions || []).length,
+      submissionsCount: q.submissionsCount || 0,
+      createdAt: q.createdAt
+    }));
+
+  res.json({
+    likedPosts,
+    likedReels,
+    myComments,
+    myPosts,
+    myReels,
+    myQuizzes
+  });
 });
 
 // Basculer la confidentialité du profil (Verrouiller / Déverrouiller le profil)

@@ -149,11 +149,32 @@ export const api = {
       return data;
     },
 
-    updateProfile: async (updates: Partial<User>): Promise<{ user: User }> => {
+    updateProfile: async (updates: Partial<User>): Promise<{ user: User; message?: string }> => {
       return fetchWithAuth('/api/auth/profile', {
         method: 'PUT',
         body: JSON.stringify(updates),
       });
+    },
+
+    changePassword: async (params: {
+      currentPassword: string;
+      newPassword: string;
+    }): Promise<{ success: boolean; message: string }> => {
+      return fetchWithAuth('/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    },
+
+    getActivity: async (): Promise<{
+      likedPosts: any[];
+      likedReels: any[];
+      myComments: any[];
+      myPosts: any[];
+      myReels: any[];
+      myQuizzes: any[];
+    }> => {
+      return fetchWithAuth('/api/auth/activity');
     },
 
     logout: () => {
@@ -200,6 +221,12 @@ export const api = {
       return fetchWithAuth(`/api/posts/${id}/comment`, {
         method: 'POST',
         body: JSON.stringify({ content, parentId }),
+      });
+    },
+
+    deleteComment: async (postId: string, commentId: string): Promise<{ success: boolean; post: Post }> => {
+      return fetchWithAuth(`/api/posts/${postId}/comments/${commentId}`, {
+        method: 'DELETE',
       });
     },
   },
@@ -290,6 +317,32 @@ export const api = {
       return fetchWithAuth('/api/quizzes');
     },
 
+    generateWithAI: async (params: {
+      topic?: string;
+      subject?: string;
+      pdfDataUrl?: string;
+      pdfName?: string;
+      questionCount?: number;
+      quizCount?: number;
+    }): Promise<{
+      quizzes: Array<{
+        title: string;
+        description: string;
+        subject: string;
+        questions: Array<{
+          question: string;
+          points: number;
+          explanation: string;
+          options: Array<{ id: string; text: string; isCorrect: boolean }>;
+        }>;
+      }>;
+    }> => {
+      return fetchWithAuth('/api/quizzes/generate-ai', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    },
+
     create: async (quizData: {
       title: string;
       description?: string;
@@ -350,12 +403,14 @@ export const api = {
 
     banUser: async (
       userId: string,
-      duration: '1d' | '3d' | '14d' | 'permanent',
-      reason?: string
+      duration: string,
+      reason?: string,
+      customValue?: number,
+      customUnit?: 'hours' | 'days'
     ): Promise<{ user: any; message: string }> => {
       return fetchWithAuth(`/api/admin/users/${userId}/ban`, {
         method: 'POST',
-        body: JSON.stringify({ duration, reason }),
+        body: JSON.stringify({ duration, reason, customValue, customUnit }),
       });
     },
 
@@ -378,6 +433,39 @@ export const api = {
 
     deleteUser: async (userId: string): Promise<{ success: boolean; id: string }> => {
       return fetchWithAuth(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    submitReport: async (params: {
+      targetType: 'post' | 'comment' | 'message' | 'reel';
+      targetId: string;
+      parentPostId?: string;
+      reason: string;
+      details?: string;
+    }): Promise<{ report: any; message: string }> => {
+      return fetchWithAuth('/api/admin/reports', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    },
+
+    getReports: async (): Promise<{ reports: any[] }> => {
+      return fetchWithAuth('/api/admin/reports');
+    },
+
+    updateReport: async (
+      reportId: string,
+      params: { status?: 'pending' | 'resolved' | 'dismissed'; deleteContent?: boolean; adminAction?: string }
+    ): Promise<{ report: any; message: string }> => {
+      return fetchWithAuth(`/api/admin/reports/${reportId}`, {
+        method: 'PUT',
+        body: JSON.stringify(params),
+      });
+    },
+
+    deleteReport: async (reportId: string): Promise<{ success: boolean }> => {
+      return fetchWithAuth(`/api/admin/reports/${reportId}`, {
         method: 'DELETE',
       });
     },

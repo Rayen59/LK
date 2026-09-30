@@ -2,8 +2,44 @@ import { Router, Request, Response } from "express";
 import { Quiz, QuizSubmission } from "../../src/types";
 import { db, saveDatabase } from "../db";
 import { broadcast, sendNotification } from "../realtime";
+import { generateQuizWithAI } from "../ai";
 
 export const quizzesRouter = Router();
+
+// AI Quiz Generation from PDF or Topic (returns draft quizzes with AI-selected exact answers for user verification)
+quizzesRouter.post("/generate-ai", async (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Connectez-vous pour générer un quiz avec l'IA." });
+    return;
+  }
+
+  const { topic, subject, pdfDataUrl, pdfName, questionCount, quizCount } = req.body;
+  if (!topic && !pdfDataUrl) {
+    res.status(400).json({
+      error: "Veuillez importer un fichier PDF ou saisir un sujet / texte de cours à analyser.",
+    });
+    return;
+  }
+
+  try {
+    const result = await generateQuizWithAI({
+      topic,
+      subject,
+      pdfDataUrl,
+      pdfName,
+      questionCount: Number(questionCount) || 5,
+      quizCount: Number(quizCount) || 1,
+    });
+    res.json(result);
+  } catch (err: any) {
+    console.error("Error generating quiz with AI:", err);
+    res.status(500).json({
+      error: err.message || "Erreur lors de la génération du quiz par l'IA.",
+    });
+  }
+});
 
 // Get quizzes list
 quizzesRouter.get("/", (_req: Request, res: Response) => {

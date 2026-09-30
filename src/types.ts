@@ -15,13 +15,44 @@ export interface User {
   blockedUsers?: string[]; // IDs des utilisateurs bloqués
   isBanned?: boolean;
   banUntil?: string | null; // ISO date string or 'permanent'
-  banDuration?: '1d' | '3d' | '14d' | 'permanent' | null;
+  banDuration?: string | null;
   banReason?: string;
   isRestricted?: boolean; // Limite aux interactions (peut voir seulement)
   restrictionReason?: string;
   isDeletedByUser?: boolean; // Compte supprimé/désactivé par l'utilisateur (réactivable à la reconnexion)
   deletedByUserAt?: string; // Date de suppression par l'utilisateur
+  lastNameChangeAt?: string | null; // Date du dernier changement de nom (limite 1 fois / 14 jours)
   createdAt: string;
+}
+
+export type ReportTargetType = 'post' | 'comment' | 'message' | 'reel';
+export type ReportStatus = 'pending' | 'resolved' | 'dismissed';
+
+export interface ContentReport {
+  id: string;
+  reporterId: string;
+  reporterName: string;
+  reporterAvatar: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  parentPostId?: string;
+  offenderId: string;
+  offenderName: string;
+  offenderAvatar?: string;
+  offenderEmail?: string;
+  reason: string;
+  details?: string;
+  contentSnapshot: string;
+  attachmentSnapshot?: {
+    type: string;
+    url: string;
+    name?: string;
+  };
+  status: ReportStatus;
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedByAdminId?: string;
+  adminAction?: string;
 }
 
 export type AttachmentType = 'document' | 'audio' | 'video' | 'image';
@@ -263,4 +294,5 @@ export interface AppDatabase {
   quizSubmissions: QuizSubmission[];
   polls: Poll[];
   notifications: AppNotification[];
+  reports?: ContentReport[];
 }

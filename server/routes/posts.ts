@@ -307,3 +307,39 @@ postsRouter.post("/:id/comment", async (req: Request, res: Response) => {
 
   res.status(201).json({ comment: newComment, comments: post.comments });
 });
+
+// Delete comment (comment author, post author, or admin)
+postsRouter.delete("/:id/comments/:commentId", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non authentifié." });
+    return;
+  }
+
+  const post = db.posts.find((p) => p.id === req.params.id);
+  if (!post) {
+    res.status(404).json({ error: "Publication non trouvée." });
+    return;
+  }
+
+  const comment = (post.comments || []).find((c) => c.id === req.params.commentId);
+  if (!comment) {
+    res.status(404).json({ error: "Commentaire introuvable." });
+    return;
+  }
+
+  if (comment.userId !== user.id && post.authorId !== user.id && user.role !== "admin") {
+    res.status(403).json({ error: "Non autorisé à supprimer ce commentaire." });
+    return;
+  }
+
+  post.comments = (post.comments || []).filter(
+    (c) => c.id !== req.params.commentId && c.parentId !== req.params.commentId
+  );
+
+  saveDatabase();
+  broadcast("UPDATE_POST", post);
+  res.json({ success: true, post });
+});
+

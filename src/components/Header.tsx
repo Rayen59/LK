@@ -5,7 +5,8 @@ import {
   Sun,
   Users,
   ArrowLeft,
-  Search
+  Search,
+  Sparkles
 } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 
@@ -44,6 +45,7 @@ interface HeaderProps {
   unreadMessagesCount?: number;
   pendingFriendRequestsCount?: number;
   onOpenValidationCodeModal?: () => void;
+  onOpenGestureSettings?: () => void;
 }
 
 const PAGE_METADATA: Record<
@@ -119,7 +121,8 @@ export const Header: React.FC<HeaderProps> = ({
   onDismissPushNotification,
   onOpenFriendsModal,
   pendingFriendRequestsCount = 0,
-  onOpenValidationCodeModal
+  onOpenValidationCodeModal,
+  onOpenGestureSettings
 }) => {
   const [isNotificationBoxOpen, setIsNotificationBoxOpen] = React.useState(false);
   const currentMeta = PAGE_METADATA[activeTab] || PAGE_METADATA.feed;
@@ -228,6 +231,20 @@ export const Header: React.FC<HeaderProps> = ({
               onClose={() => setIsNotificationBoxOpen(false)}
               onOpenValidationCodeModal={onOpenValidationCodeModal}
             />
+
+            {onOpenGestureSettings && (
+              <button
+                id="gesture-control-btn"
+                type="button"
+                onClick={onOpenGestureSettings}
+                className="h-9 px-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center space-x-1.5 text-xs font-bold shrink-0 cursor-pointer group"
+                title="Contrôle Gestuel IA & Touche Virtuelle"
+              >
+                <Sparkles className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
+                <span className="hidden xl:inline">Gestes IA</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </button>
+            )}
 
             <button
               id="theme-toggle-btn"

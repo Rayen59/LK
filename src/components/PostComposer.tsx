@@ -20,6 +20,8 @@ import {
 interface PostComposerProps {
   currentUser: User;
   onPostCreated: () => void;
+  initialAttachment?: Attachment | null;
+  onClearInitialAttachment?: () => void;
 }
 
 const MEDICAL_TAGS = [
@@ -38,7 +40,12 @@ const MEDICAL_TAGS = [
   'Annales & QCM'
 ];
 
-export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostCreated }) => {
+export const PostComposer: React.FC<PostComposerProps> = ({
+  currentUser,
+  onPostCreated,
+  initialAttachment,
+  onClearInitialAttachment
+}) => {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -47,6 +54,19 @@ export const PostComposer: React.FC<PostComposerProps> = ({ currentUser, onPostC
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (initialAttachment) {
+      setAttachments((prev) => [...prev, initialAttachment]);
+      setIsExpanded(true);
+      if (!content) {
+        setContent('Capture d’écran réalisée par contrôle gestuel IA 📸');
+      }
+      if (onClearInitialAttachment) {
+        onClearInitialAttachment();
+      }
+    }
+  }, [initialAttachment, onClearInitialAttachment, content]);
 
   // Handle Document upload
   const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

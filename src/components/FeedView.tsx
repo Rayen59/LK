@@ -47,6 +47,8 @@ interface FeedViewProps {
   onOpenChatWithUser?: (userId: string) => void;
   onNavigateTab?: (tab: MainTabType) => void;
   onOpenFriendsModal?: () => void;
+  initialSharedImage?: string | null;
+  onClearInitialSharedImage?: () => void;
 }
 
 type SuggestedUser = User & {
@@ -61,7 +63,9 @@ export const FeedView: React.FC<FeedViewProps> = ({
   onOpenUserProfile,
   onOpenChatWithUser,
   onNavigateTab,
-  onOpenFriendsModal
+  onOpenFriendsModal,
+  initialSharedImage,
+  onClearInitialSharedImage
 }) => {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [savingPost, setSavingPost] = useState<Post | null>(null);
@@ -502,7 +506,20 @@ export const FeedView: React.FC<FeedViewProps> = ({
 
             {/* 2. COMPACT POST COMPOSER ("Quoi de neuf ?") */}
             {!currentUser.isRestricted ? (
-              <PostComposer currentUser={currentUser} onPostCreated={onRefresh} />
+              <PostComposer
+                currentUser={currentUser}
+                onPostCreated={onRefresh}
+                initialAttachment={
+                  initialSharedImage
+                    ? {
+                        type: 'image',
+                        url: initialSharedImage,
+                        name: `Capture_Opposition_${Date.now()}.png`
+                      }
+                    : null
+                }
+                onClearInitialAttachment={onClearInitialSharedImage}
+              />
             ) : (
               <div className="mb-3.5 p-3.5 bg-white dark:bg-[#0f172a] border border-dashed border-slate-300 dark:border-slate-800 rounded-2xl text-center text-slate-500 dark:text-slate-400 text-xs">
                 🔒 Publication désactivée en mode lecture seule.

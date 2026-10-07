@@ -16,6 +16,7 @@ import { ProfileView } from './components/ProfileView';
 import { FriendsModal } from './components/FriendsModal';
 import { MenuPageView } from './components/SlidingPanel';
 import { ValidationCodeModal } from './components/ValidationCodeModal';
+import { TouchlessController } from './components/gesture/TouchlessController';
 import {
   Film,
   MessageCircle,
@@ -61,6 +62,11 @@ export default function App() {
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [unreadDirectMessagesCount, setUnreadDirectMessagesCount] = useState(0);
   const [pendingFriendRequestsCount, setPendingFriendRequestsCount] = useState(0);
+
+  // Touchless Gesture Control State (Zoom & Screenshots)
+  const [globalZoom, setGlobalZoom] = useState(1);
+  const [showGestureModalFromHeader, setShowGestureModalFromHeader] = useState(false);
+  const [sharedScreenshotUrl, setSharedScreenshotUrl] = useState<string | null>(null);
 
   // Notifications preference (persistent in localStorage)
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() => {
@@ -712,7 +718,11 @@ export default function App() {
       </aside>
 
       {/* RIGHT WORKSPACE VIEWPORT (Header + Main Content + Mobile Bottom Bar) */}
-      <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden relative">
+      <div
+        id="app-workspace-viewport"
+        className="flex-1 min-w-0 h-full flex flex-col overflow-hidden relative transition-all duration-150 origin-top"
+        style={globalZoom !== 1 ? { zoom: globalZoom } : undefined}
+      >
         {/* Top Contextual Header - Hidden on mobile when inside an active chat conversation */}
         <div
           className={
@@ -742,6 +752,7 @@ export default function App() {
             unreadMessagesCount={unreadDirectMessagesCount}
             pendingFriendRequestsCount={pendingFriendRequestsCount}
             onOpenValidationCodeModal={() => setShowValidationCodeModal(true)}
+            onOpenGestureSettings={() => setShowGestureModalFromHeader(true)}
           />
         </div>
 
@@ -797,6 +808,8 @@ export default function App() {
               onOpenChatWithUser={handleOpenChatWithUser}
               onNavigateTab={(tab) => navigateToTab(tab)}
               onOpenFriendsModal={() => setShowFriendsModal(true)}
+              initialSharedImage={sharedScreenshotUrl}
+              onClearInitialSharedImage={() => setSharedScreenshotUrl(null)}
             />
           )}
 
@@ -1044,6 +1057,17 @@ export default function App() {
           setShowValidationCodeModal(false);
           setPendingPcAlert(null);
         }}
+      />
+
+      {/* AI Touchless Gesture Controller (Remote Scrolling, Virtual Pointer, Remote Click, Zoom & Opposition Screenshots) */}
+      <TouchlessController
+        onShareScreenshotToFeed={(dataUrl) => {
+          setSharedScreenshotUrl(dataUrl);
+          navigateToTab('feed');
+        }}
+        onZoomChange={(zoom) => setGlobalZoom(zoom)}
+        externalTriggerModal={showGestureModalFromHeader}
+        onCloseExternalModal={() => setShowGestureModalFromHeader(false)}
       />
     </div>
   );

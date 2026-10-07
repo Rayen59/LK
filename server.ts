@@ -45,6 +45,19 @@ app.use("/api/polls", pollsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/admin", adminRouter);
 
+// Serve static public assets with proper wasm headers
+const publicPath = path.join(process.cwd(), "public");
+app.use(
+  express.static(publicPath, {
+    setHeaders: (res, filePath) => {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      if (filePath.endsWith(".wasm")) {
+        res.setHeader("Content-Type", "application/wasm");
+      }
+    }
+  })
+);
+
 // Vite middleware & Production static serving
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

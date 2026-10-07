@@ -6,7 +6,8 @@ import {
   analyzeSingleHand,
   checkTwoHandsOpposition,
   mapCameraToScreen,
-  computeAdaptiveAlpha,
+  StablePointerTracker,
+  AirSlideTracker,
   distance2D,
   Point3D
 } from '../../lib/gestureEngine';
@@ -32,7 +33,7 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
   const [isEnabled, setIsEnabled] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('mk_gesture_enabled');
-      return saved !== 'false'; // default enabled
+      return saved !== 'false';
     }
     return true;
   });
@@ -46,20 +47,20 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
   });
 
   const [dwellClickEnabled, setDwellClickEnabled] = useState<boolean>(false);
-  const [smoothingLevel, setSmoothingLevel] = useState<number>(0.45); // Snappy default
+  const [smoothingLevel, setSmoothingLevel] = useState<number>(0.45);
   const [showDiagnosticPreview, setShowDiagnosticPreview] = useState<boolean>(false);
   const [isDockMinimized, setIsDockMinimized] = useState<boolean>(false);
 
-  // Modals state
+  // Modals & Capture state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
   const [isScreenshotModalOpen, setIsScreenshotModalOpen] = useState(false);
   const [isCameraFlash, setIsCameraFlash] = useState(false);
+  const [lastCaptureNotification, setLastCaptureNotification] = useState<string | null>(null);
 
   // Vision model and stream state
   const [isModelReady, setIsModelReady] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
 
   // Real-time HUD State
   const [gestureState, setGestureState] = useState<GestureDetectionState>({
@@ -73,10 +74,13 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
     isPinching: false,
     pinchStrength: 0,
     isClickTriggered: false,
+    isAirSlideActive: false,
+    airSlideDirection: null,
+    airScrollDeltaY: 0,
+    airScrollDeltaX: 0,
     isScrollingUp: false,
     isScrollingDown: false,
     scrollSpeed: 0,
-    verticalSwipeDelta: 0,
     zoomAction: null,
     zoomFactorDelta: 0,
     isOppositionGesture: false,
@@ -99,16 +103,9 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
   const animFrameIdRef = useRef<number | null>(null);
   const diagnosticCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Fast coordinate smoothing & velocity state
-  const smoothPosRef = useRef<{ x: number; y: number }>({
-    x: typeof window !== 'undefined' ? window.innerWidth / 2 : 500,
-    y: typeof window !== 'undefined' ? window.innerHeight / 2 : 400
-  });
-  const prevTargetPosRef = useRef<{ x: number; y: number; time: number }>({
-    x: 0,
-    y: 0,
-    time: performance.now()
-  });
+  // High-performance tracker instances
+  const pointerTrackerRef = useRef<StablePointerTracker>(new StablePointerTracker());
+  const airSlideTrackerRef = useRef<AirSlideTracker>(new AirSlideTracker());
 
   // Action debounces & cooldowns
   const lastClickTimeRef = useRef<number>(0);
@@ -153,19 +150,16 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
     [soundEnabled]
   );
 
-  // Initialize MediaPipe Vision Task with robust multi-tiered fallback
+  // Initialize MediaPipe Vision Task
   useEffect(() => {
     let isCancelled = false;
 
     async function initVisionTask() {
-      setInitError(null);
       try {
-        // Tier 1: Try local server wasm files first (fastest, zero network latency)
         let wasmResolver: any = null;
         try {
           wasmResolver = await FilesetResolver.forVisionTasks('/wasm');
         } catch {
-          // Tier 2: Exact matching CDN version for 1.1.0
           wasmResolver = await FilesetResolver.forVisionTasks(
             'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0/wasm'
           );
@@ -173,7 +167,6 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
 
         if (isCancelled) return;
 
-        // Load HandLandmarker model (local or CDN fallback)
         let landmarker: HandLandmarker;
         try {
           landmarker = await HandLandmarker.createFromOptions(wasmResolver, {
@@ -209,7 +202,6 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
         triggerSound('ready');
       } catch (err: any) {
         console.error('Vision initialization error:', err);
-        setInitError(err?.message || 'Erreur chargement IA vision');
       }
     }
 
@@ -263,7 +255,6 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
       } catch (err: any) {
         console.warn('Webcam stream unavailable:', err);
         setIsCameraActive(false);
-        setInitError('Accès caméra requis pour le contrôle gestuel');
       }
     }
 
@@ -277,33 +268,44 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
     };
   }, [isEnabled, isModelReady]);
 
-  // Trigger Screenshot Capture (via Opposition gesture or manual button)
+  // 📸 VRAIE CAPTURE D'ÉCRAN (Capture par Opposition / Manuel)
   const captureScreenshot = useCallback(async () => {
     const now = Date.now();
-    // 2.5 seconds cooldown between automatic captures
-    if (now - lastCaptureTimeRef.current < 2500) return;
+    // 2.2 seconds cooldown between automatic captures
+    if (now - lastCaptureTimeRef.current < 2200) return;
     lastCaptureTimeRef.current = now;
 
-    // 1. Shutter sound and flash
+    // 1. Shutter sound & full-screen flash
     triggerSound('shutter');
     setIsCameraFlash(true);
     setTimeout(() => setIsCameraFlash(false), 260);
 
-    // 2. Hide pointer and overlays momentarily
+    // 2. Wait a tick for flash settling
     await new Promise((r) => setTimeout(r, 60));
 
     try {
       const rootElement = document.getElementById('root') || document.body;
+
+      // Real reliable html2canvas capture with allowTaint=false (never crashes with SecurityError)
       const canvas = await html2canvas(rootElement, {
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         logging: false,
-        backgroundColor: null
+        scale: 1,
+        backgroundColor: document.documentElement.classList.contains('dark') ? '#070d20' : '#f8fafc',
+        ignoreElements: (el) =>
+          el.tagName === 'VIDEO' ||
+          el.id === 'gesture-pointer-hud' ||
+          el.classList.contains('gesture-hud-element')
       });
 
       const dataUrl = canvas.toDataURL('image/png');
       setCapturedImageUrl(dataUrl);
       setIsScreenshotModalOpen(true);
+
+      // Notification toast
+      setLastCaptureNotification('📸 Capture d’écran réussie ! Image enregistrée');
+      setTimeout(() => setLastCaptureNotification(null), 3500);
     } catch (err) {
       console.error('Screenshot capture error:', err);
     }
@@ -337,7 +339,7 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
   const performVirtualClick = useCallback(
     (x: number, y: number) => {
       const now = Date.now();
-      if (now - lastClickTimeRef.current < 350) return; // Debounce rapid clicks
+      if (now - lastClickTimeRef.current < 350) return;
       lastClickTimeRef.current = now;
 
       // Spawn visual ripple
@@ -349,14 +351,12 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
 
       triggerSound('click');
 
-      // Find element at coordinates
       const target = document.elementFromPoint(x, y);
       if (!target) return;
 
       const clickable =
         target.closest('button, a, input, textarea, select, [role="button"], [tabindex]') || target;
 
-      // Dispatch mouse events
       const mouseEvents = ['mousedown', 'mouseup', 'click'];
       for (const evtName of mouseEvents) {
         const evt = new MouseEvent(evtName, {
@@ -405,9 +405,7 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
               const screenW = window.innerWidth;
               const screenH = window.innerHeight;
 
-              // 1. INTELLIGENT RAPID POINTER POSITION
-              // Uses mapCameraToScreen to comfortably cover 100% of the screen
-              // regardless of whether user is near, far, or slightly off-center
+              // 1. FULL-RANGE SCREEN COORDINATE PROJECTION (Comfortable bounds covering entire screen)
               const targetCoords = mapCameraToScreen(
                 h1Info.indexTip.x,
                 h1Info.indexTip.y,
@@ -415,32 +413,40 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
                 screenH
               );
 
-              // 2. VELOCITY-ADAPTIVE SMOOTHING (1-Euro style filter)
-              // Instantaneous response when moving briskly, stabilized when still
-              const dtSec = Math.max(0.005, (nowPerf - prevTargetPosRef.current.time) / 1000);
-              const { alpha, velocity } = computeAdaptiveAlpha(
+              // 2. STABLE DEADBAND POINTER TRACKER (Zero jitter when still, instant 1:1 speed when moving)
+              const { x: posX, y: posY, velocity } = pointerTrackerRef.current.update(
                 targetCoords.x,
                 targetCoords.y,
-                prevTargetPosRef.current.x,
-                prevTargetPosRef.current.y,
-                dtSec,
+                nowPerf,
                 smoothingLevel
               );
 
-              prevTargetPosRef.current = {
-                x: targetCoords.x,
-                y: targetCoords.y,
-                time: nowPerf
-              };
+              // 3. AIR SLIDE / AIR SCROLL DETECTION ("Glissement du doigt dans l'air")
+              // Tracks air swipe motion: finger gliding up -> screen scrolls up ("dans le haut l'écran monte")
+              const airSlideResult = airSlideTrackerRef.current.update(
+                posX,
+                posY,
+                nowPerf,
+                h1Info.isTwoFingerScrollMode
+              );
 
-              smoothPosRef.current.x += (targetCoords.x - smoothPosRef.current.x) * alpha;
-              smoothPosRef.current.y += (targetCoords.y - smoothPosRef.current.y) * alpha;
+              const scrollTarget = document.querySelector('main') || window;
 
-              let posX = Math.round(smoothPosRef.current.x);
-              let posY = Math.round(smoothPosRef.current.y);
+              if (airSlideResult.isActive) {
+                if (airSlideResult.direction === 'up') {
+                  // Finger sliding upwards -> scroll up ("dans le haut l'écran monte")
+                  scrollTarget.scrollBy({ top: -Math.abs(airSlideResult.deltaY), behavior: 'auto' });
+                } else if (airSlideResult.direction === 'down') {
+                  // Finger sliding downwards -> scroll down
+                  scrollTarget.scrollBy({ top: Math.abs(airSlideResult.deltaY), behavior: 'auto' });
+                } else if (airSlideResult.direction === 'left') {
+                  scrollTarget.scrollBy({ left: -Math.abs(airSlideResult.deltaX), behavior: 'auto' });
+                } else if (airSlideResult.direction === 'right') {
+                  scrollTarget.scrollBy({ left: Math.abs(airSlideResult.deltaX), behavior: 'auto' });
+                }
+              }
 
-              // 3. INTELLIGENT MAGNETIC SNAP TO BUTTONS
-              // Subtle magnetic pull towards centers of clickable controls
+              // 4. CHECK ELEMENT UNDER POINTER (Without artificial magnetic jitter)
               const rawElementUnder = document.elementFromPoint(posX, posY);
               const clickableEl = rawElementUnder?.closest(
                 'button, a, input, textarea, select, [role="button"], [tabindex]'
@@ -449,17 +455,6 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
               setIsHoveringClickable(isClickable);
 
               if (isClickable && clickableEl) {
-                const rect = clickableEl.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                const distToCenter = Math.hypot(posX - centerX, posY - centerY);
-
-                // Subtle magnetic pull if within 30px
-                if (distToCenter < 30) {
-                  posX += Math.round((centerX - posX) * 0.35);
-                  posY += Math.round((centerY - posY) * 0.35);
-                }
-
                 const label =
                   clickableEl.getAttribute('aria-label') ||
                   clickableEl.getAttribute('title') ||
@@ -470,21 +465,21 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
                 setHoveredElementText('');
               }
 
-              // 4. PINCH CLICK GESTURE
+              // 5. PINCH CLICK GESTURE
               let isClickTriggered = false;
-              if (h1Info.isPinch) {
+              if (h1Info.isPinch && !airSlideResult.isActive) {
                 performVirtualClick(posX, posY);
                 isClickTriggered = true;
               }
 
-              // 5. DWELL CLICK PROGRESS
+              // 6. DWELL CLICK PROGRESS
               let currentDwellRatio = 0;
-              if (dwellClickEnabled && isClickable) {
+              if (dwellClickEnabled && isClickable && !airSlideResult.isActive) {
                 const now = Date.now();
                 if (
                   dwellStartRef.current &&
                   dwellStartRef.current.element === clickableEl &&
-                  Math.hypot(posX - dwellStartRef.current.x, posY - dwellStartRef.current.y) < 28
+                  Math.hypot(posX - dwellStartRef.current.x, posY - dwellStartRef.current.y) < 25
                 ) {
                   const elapsed = now - dwellStartRef.current.time;
                   currentDwellRatio = Math.min(1, elapsed / 1000);
@@ -501,27 +496,25 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
               }
               setDwellProgress(currentDwellRatio);
 
-              // 6. FAST REMOTE SCROLLING
+              // 7. EDGE SCROLLING ZONES (When cursor hovers near top or bottom edges)
               let isScrollUp = false;
               let isScrollDown = false;
 
-              // Top & bottom edge scrolling zones (adaptive speed)
-              if (posY < screenH * 0.16) {
-                isScrollUp = true;
-                const speed = Math.min(26, Math.max(5, Math.round(((screenH * 0.16 - posY) / (screenH * 0.16)) * 24)));
-                const scrollTarget = document.querySelector('main') || window;
-                scrollTarget.scrollBy({ top: -speed, behavior: 'auto' });
-              } else if (posY > screenH * 0.84) {
-                isScrollDown = true;
-                const speed = Math.min(26, Math.max(5, Math.round(((posY - screenH * 0.84) / (screenH * 0.16)) * 24)));
-                const scrollTarget = document.querySelector('main') || window;
-                scrollTarget.scrollBy({ top: speed, behavior: 'auto' });
+              if (!airSlideResult.isActive) {
+                if (posY < screenH * 0.14) {
+                  isScrollUp = true;
+                  const speed = Math.min(24, Math.max(5, Math.round(((screenH * 0.14 - posY) / (screenH * 0.14)) * 22)));
+                  scrollTarget.scrollBy({ top: -speed, behavior: 'auto' });
+                } else if (posY > screenH * 0.86) {
+                  isScrollDown = true;
+                  const speed = Math.min(24, Math.max(5, Math.round(((posY - screenH * 0.86) / (screenH * 0.14)) * 22)));
+                  scrollTarget.scrollBy({ top: speed, behavior: 'auto' });
+                }
               }
 
-              // 7. REMOTE ZOOMING (Two Hands OR Single Hand)
+              // 8. REMOTE ZOOMING (Two Hands OR Single Hand)
               let zoomAction: 'in' | 'out' | null = null;
               if (hand2) {
-                // Two hands distance mode
                 const distTwoHands = distance2D(hand1[0], hand2[0]);
                 if (twoHandsLastDistRef.current !== null) {
                   const deltaDist = distTwoHands - twoHandsLastDistRef.current;
@@ -536,19 +529,18 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
                 twoHandsLastDistRef.current = distTwoHands;
               } else {
                 twoHandsLastDistRef.current = null;
-                // Single hand mode: Fist = zoom out, Full open palm = zoom in
                 if (h1Info.isFist) {
                   adjustZoom(-0.03);
                   zoomAction = 'out';
-                } else if (h1Info.isOpenPalm && !isScrollUp && !isScrollDown) {
+                } else if (h1Info.isOpenPalm && !isScrollUp && !isScrollDown && !airSlideResult.isActive) {
                   adjustZoom(0.03);
                   zoomAction = 'in';
                 }
               }
 
-              // 8. 📸 INSTANT OPPOSITION GESTURE SCREENSHOT
-              // Triggered when user performs an opposition gesture with hand(s):
-              // - Single hand: Thumb in opposition to pinky, ring, middle, or thumb-index circle
+              // 9. 📸 VRAIE CAPTURE PAR OPPOSITION DE LA MAIN
+              // Triggered on opposition gesture of the hand:
+              // - Single hand: Thumb opposing pinky, ring, middle, or thumb-index circle
               // - Two hands: Opposing photographer framing or palms facing
               let isOpposition = false;
               if (hand2) {
@@ -560,13 +552,13 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
               const nowTime = Date.now();
               let oppProgress = 0;
 
-              // Fast snappy opposition detection (160ms stability threshold)
+              // Fast snappy opposition detection (130ms stability hold)
               if (isOpposition) {
                 if (oppositionHoldStartRef.current === null) {
                   oppositionHoldStartRef.current = nowTime;
                 }
                 const holdDuration = nowTime - oppositionHoldStartRef.current;
-                oppProgress = Math.min(1, holdDuration / 160);
+                oppProgress = Math.min(1, holdDuration / 130);
 
                 if (oppProgress >= 1) {
                   oppositionHoldStartRef.current = null;
@@ -576,13 +568,20 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
                 oppositionHoldStartRef.current = null;
               }
 
-              // Compute gesture display label
-              let activeGesture = 'Pointeur Véloce';
+              // Compute gesture label for HUD
+              let activeGesture = 'Pointeur Stable';
               if (isOpposition) activeGesture = '📸 Opposition Capture !';
+              else if (airSlideResult.isActive)
+                activeGesture =
+                  airSlideResult.direction === 'up'
+                    ? "Glissement : L'écran monte ↑"
+                    : airSlideResult.direction === 'down'
+                    ? "Glissement : L'écran descend ↓"
+                    : "Glissement Latéral ↔";
               else if (h1Info.isPinch) activeGesture = '🤏 Clic Pincement';
               else if (zoomAction) activeGesture = zoomAction === 'in' ? '🔍 Zoom +' : '🔍 Dézoom -';
-              else if (isScrollUp) activeGesture = '📜 Défilement Haut';
-              else if (isScrollDown) activeGesture = '📜 Défilement Bas';
+              else if (isScrollUp) activeGesture = '📜 Bord Haut (Monte)';
+              else if (isScrollDown) activeGesture = '📜 Bord Bas (Descend)';
               else if (isClickable) activeGesture = '👆 Survol Cliquable';
 
               setGestureState({
@@ -596,10 +595,13 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
                 isPinching: h1Info.isPinch,
                 pinchStrength: Math.max(0, 1 - h1Info.thumbIndexDist),
                 isClickTriggered,
+                isAirSlideActive: airSlideResult.isActive,
+                airSlideDirection: airSlideResult.direction,
+                airScrollDeltaY: airSlideResult.deltaY,
+                airScrollDeltaX: airSlideResult.deltaX,
                 isScrollingUp: isScrollUp,
                 isScrollingDown: isScrollDown,
                 scrollSpeed: isScrollUp || isScrollDown ? 16 : 0,
-                verticalSwipeDelta: 0,
                 zoomAction,
                 zoomFactorDelta: 0,
                 isOppositionGesture: isOpposition,
@@ -609,6 +611,8 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
                 activeGestureName: activeGesture,
                 handState: isOpposition
                   ? 'opposition'
+                  : airSlideResult.isActive
+                  ? 'air_slide'
                   : h1Info.isPinch
                   ? 'pinch'
                   : h1Info.isFist
@@ -618,7 +622,7 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
                   : 'pointing'
               });
 
-              // Optional diagnostic rendering on canvas if user toggled it in settings
+              // Diagnostic canvas rendering if enabled
               if (showDiagnosticPreview && diagnosticCanvasRef.current) {
                 const cvs = diagnosticCanvasRef.current;
                 const ctx = cvs.getContext('2d');
@@ -627,7 +631,6 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
                   cvs.height = video.videoHeight || 240;
                   ctx.drawImage(video, 0, 0, cvs.width, cvs.height);
 
-                  // Draw landmarks
                   for (const pt of hand1) {
                     ctx.beginPath();
                     ctx.arc(pt.x * cvs.width, pt.y * cvs.height, 3, 0, 2 * Math.PI);
@@ -646,12 +649,13 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
               }
             }
           } else {
-            // No hands visible
             setGestureState((prev) => ({
               ...prev,
               hasHand: false,
               handCount: 0,
               activeGestureName: 'Recherche de main...',
+              isAirSlideActive: false,
+              airSlideDirection: null,
               isScrollingUp: false,
               isScrollingDown: false,
               isOppositionGesture: false,
@@ -661,9 +665,10 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
             twoHandsLastDistRef.current = null;
             dwellStartRef.current = null;
             setDwellProgress(0);
+            airSlideTrackerRef.current.reset();
           }
         } catch {
-          // Catch and continue next frame
+          // Continue to next frame
         }
       }
 
@@ -693,8 +698,7 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
     <>
       {/* 
         HIDDEN BACKGROUND VIDEO ELEMENT:
-        Per requirement: "naffiche pas de camera au mileu de site ou dans le site car c est ennuyeux".
-        Zero video element displayed on page; processed silently in background.
+        Zero camera displayed on page; processed silently in background.
       */}
       <video
         ref={videoRef}
@@ -702,7 +706,7 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
         muted
         autoPlay
         aria-hidden="true"
-        className="hidden"
+        className="hidden gesture-hud-element"
         style={{ display: 'none' }}
       />
 
@@ -725,6 +729,7 @@ export const TouchlessController: React.FC<TouchlessControllerProps> = ({
           onTriggerManualCapture={captureScreenshot}
           diagnosticCanvasRef={diagnosticCanvasRef}
           showDiagnosticPreview={showDiagnosticPreview}
+          lastCaptureNotification={lastCaptureNotification}
         />
       )}
 

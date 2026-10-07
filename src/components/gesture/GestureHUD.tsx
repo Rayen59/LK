@@ -8,7 +8,11 @@ import {
   RotateCcw,
   Sliders,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight
 } from 'lucide-react';
 import { GestureDetectionState } from '../../lib/gestureEngine';
 
@@ -29,6 +33,7 @@ interface GestureHUDProps {
   onTriggerManualCapture: () => void;
   diagnosticCanvasRef?: React.RefObject<HTMLCanvasElement | null>;
   showDiagnosticPreview: boolean;
+  lastCaptureNotification?: string | null;
 }
 
 export const GestureHUD: React.FC<GestureHUDProps> = ({
@@ -47,7 +52,8 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
   onToggleDockMinimized,
   onTriggerManualCapture,
   diagnosticCanvasRef,
-  showDiagnosticPreview
+  showDiagnosticPreview,
+  lastCaptureNotification
 }) => {
   return (
     <>
@@ -55,56 +61,89 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
       {isCameraFlash && (
         <div
           aria-hidden="true"
-          className="fixed inset-0 z-[10000] pointer-events-none bg-white transition-opacity duration-300 ease-out animate-fadeIn"
-          style={{ opacity: 0.95 }}
+          className="fixed inset-0 z-[10000] pointer-events-none bg-white transition-opacity duration-300 ease-out animate-fadeIn gesture-hud-element"
+          style={{ opacity: 0.98 }}
         />
       )}
 
-      {/* 2. Edge Scroll Indicators */}
-      {state.isScrollingUp && (
+      {/* 2. Instant Toast Notification on Real Screenshot Capture */}
+      {lastCaptureNotification && (
         <div
           aria-hidden="true"
-          className="fixed top-2 left-1/2 -translate-x-1/2 z-[9990] pointer-events-none px-4 py-1.5 rounded-full bg-blue-600/90 text-white text-xs font-bold shadow-lg backdrop-blur-md flex items-center space-x-2 animate-bounce"
+          className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none px-5 py-2.5 rounded-2xl bg-emerald-600 text-white font-extrabold text-sm shadow-2xl backdrop-blur-md flex items-center space-x-2.5 animate-bounce gesture-hud-element"
+        >
+          <Camera className="w-5 h-5 text-white animate-pulse" />
+          <span>{lastCaptureNotification}</span>
+        </div>
+      )}
+
+      {/* 3. Air Slide / Air Scroll Indicators ("Glissement d'air") */}
+      {state.isAirSlideActive && state.airSlideDirection && (
+        <div
+          aria-hidden="true"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-[9990] pointer-events-none px-4 py-2 rounded-full bg-indigo-600/95 text-white text-xs font-extrabold shadow-xl backdrop-blur-md flex items-center space-x-2 animate-fadeIn gesture-hud-element"
+        >
+          {state.airSlideDirection === 'up' && <ArrowUp className="w-4 h-4 animate-bounce" />}
+          {state.airSlideDirection === 'down' && <ArrowDown className="w-4 h-4 animate-bounce" />}
+          {state.airSlideDirection === 'left' && <ArrowLeft className="w-4 h-4 animate-bounce" />}
+          {state.airSlideDirection === 'right' && <ArrowRight className="w-4 h-4 animate-bounce" />}
+          <span>
+            {state.airSlideDirection === 'up'
+              ? "Glissement d'air : L'écran monte ↑"
+              : state.airSlideDirection === 'down'
+              ? "Glissement d'air : L'écran descend ↓"
+              : state.airSlideDirection === 'left'
+              ? "Glissement d'air : Vers la gauche ←"
+              : "Glissement d'air : Vers la droite →"}
+          </span>
+        </div>
+      )}
+
+      {/* 4. Edge Scroll Indicators */}
+      {state.isScrollingUp && !state.isAirSlideActive && (
+        <div
+          aria-hidden="true"
+          className="fixed top-2 left-1/2 -translate-x-1/2 z-[9990] pointer-events-none px-4 py-1.5 rounded-full bg-blue-600/90 text-white text-xs font-bold shadow-lg backdrop-blur-md flex items-center space-x-2 animate-bounce gesture-hud-element"
         >
           <MoveVertical className="w-3.5 h-3.5 rotate-180" />
-          <span>Défilement vers le haut</span>
+          <span>Bord supérieur : Défilement vers le haut</span>
         </div>
       )}
 
-      {state.isScrollingDown && (
+      {state.isScrollingDown && !state.isAirSlideActive && (
         <div
           aria-hidden="true"
-          className="fixed bottom-16 lg:bottom-4 left-1/2 -translate-x-1/2 z-[9990] pointer-events-none px-4 py-1.5 rounded-full bg-blue-600/90 text-white text-xs font-bold shadow-lg backdrop-blur-md flex items-center space-x-2 animate-bounce"
+          className="fixed bottom-16 lg:bottom-4 left-1/2 -translate-x-1/2 z-[9990] pointer-events-none px-4 py-1.5 rounded-full bg-blue-600/90 text-white text-xs font-bold shadow-lg backdrop-blur-md flex items-center space-x-2 animate-bounce gesture-hud-element"
         >
           <MoveVertical className="w-3.5 h-3.5" />
-          <span>Défilement vers le bas</span>
+          <span>Bord inférieur : Défilement vers le bas</span>
         </div>
       )}
 
-      {/* 3. Opposition Framing Visual Feedback (When opposition gesture is in progress) */}
+      {/* 5. Opposition Framing Feedback (When opposition gesture is in progress) */}
       {state.isOppositionGesture && (
         <div
           aria-hidden="true"
-          className="fixed inset-8 sm:inset-16 z-[9995] pointer-events-none flex flex-col items-center justify-between border-2 border-dashed border-rose-500/80 rounded-3xl bg-rose-500/5 backdrop-blur-[1px] animate-pulse transition-all duration-200"
+          className="fixed inset-8 sm:inset-16 z-[9995] pointer-events-none flex flex-col items-center justify-between border-2 border-dashed border-rose-500 rounded-3xl bg-rose-500/10 backdrop-blur-[1px] animate-pulse transition-all duration-150 gesture-hud-element"
         >
-          <div className="pt-4 flex items-center space-x-2 px-4 py-1.5 rounded-full bg-rose-600 text-white text-xs font-extrabold shadow-lg">
+          <div className="pt-4 flex items-center space-x-2.5 px-4 py-1.5 rounded-full bg-rose-600 text-white text-xs font-extrabold shadow-xl">
             <Camera className="w-4 h-4 animate-spin" />
             <span>
-              Mouvement d'opposition détecté : Capture en cours ({Math.round(state.oppositionProgress * 100)}%)
+              📸 Geste d'opposition détecté : Capture en cours ({Math.round(state.oppositionProgress * 100)}%)
             </span>
           </div>
 
           {/* Corner brackets */}
-          <div className="w-full flex justify-between px-6 pb-6 text-rose-500 font-mono text-2xl font-bold">
+          <div className="w-full flex justify-between px-6 pb-6 text-rose-500 font-mono text-3xl font-bold">
             <span>⌞</span>
             <span>⌟</span>
           </div>
         </div>
       )}
 
-      {/* 4. Zoom Scale Pill Indicator (Visible when zoom != 1.0 or during zoom gesture) */}
+      {/* 6. Zoom Scale Pill Indicator (Visible when zoom != 1.0 or during zoom gesture) */}
       {(Math.abs(currentZoom - 1) > 0.02 || state.zoomAction) && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[9980] px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-black/90 text-white text-xs font-bold shadow-xl backdrop-blur-md border border-slate-700/80 flex items-center space-x-3 pointer-events-auto">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[9980] px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-black/90 text-white text-xs font-bold shadow-xl backdrop-blur-md border border-slate-700/80 flex items-center space-x-3 pointer-events-auto gesture-hud-element">
           <div className="flex items-center space-x-1.5">
             <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
             <span>Zoom : {Math.round(currentZoom * 100)}%</span>
@@ -123,12 +162,12 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
         </div>
       )}
 
-      {/* 5. Click Ripples */}
+      {/* 7. Click Ripples */}
       {clickRipples.map((ripple) => (
         <div
           key={ripple.id}
           aria-hidden="true"
-          className="fixed pointer-events-none z-[9998] rounded-full border-2 border-blue-400 bg-blue-400/30 -translate-x-1/2 -translate-y-1/2 animate-ping"
+          className="fixed pointer-events-none z-[9998] rounded-full border-2 border-blue-400 bg-blue-400/30 -translate-x-1/2 -translate-y-1/2 animate-ping gesture-hud-element"
           style={{
             left: ripple.x,
             top: ripple.y,
@@ -138,14 +177,15 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
         />
       ))}
 
-      {/* 6. Virtual Touch Pointer (Holographic Cursor) */}
+      {/* 8. Virtual Touch Pointer (Holographic Cursor - ZERO JITTER with translate3d) */}
       {state.hasHand && (
         <div
+          id="gesture-pointer-hud"
           aria-hidden="true"
-          className="fixed pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2 transition-transform duration-75 ease-out select-none"
+          className="fixed pointer-events-none z-[9999] top-0 left-0 select-none gesture-hud-element"
           style={{
-            left: state.pointerX,
-            top: state.pointerY
+            transform: `translate3d(${state.pointerX}px, ${state.pointerY}px, 0) translate(-50%, -50%)`,
+            willChange: 'transform'
           }}
         >
           {/* Dwell Progress Ring */}
@@ -180,12 +220,12 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
           <div className="relative flex items-center justify-center">
             {/* Outer halo */}
             <div
-              className={`rounded-full transition-all duration-150 ${
+              className={`rounded-full transition-all duration-100 ${
                 state.isPinching
-                  ? 'w-6 h-6 bg-rose-500/60 scale-75'
+                  ? 'w-6 h-6 bg-rose-500/70 scale-75'
                   : isHoveringClickable
-                  ? 'w-10 h-10 border-2 border-blue-400 bg-blue-500/20 shadow-lg shadow-blue-500/40 animate-pulse'
-                  : 'w-7 h-7 border border-blue-400/80 bg-blue-500/10 shadow-md shadow-blue-500/20'
+                  ? 'w-10 h-10 border-2 border-blue-400 bg-blue-500/20 shadow-lg shadow-blue-500/50'
+                  : 'w-7 h-7 border border-blue-400/80 bg-blue-500/10 shadow-md shadow-blue-500/25'
               }`}
             />
 
@@ -195,7 +235,7 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
                 state.isPinching
                   ? 'w-3 h-3 bg-rose-400 shadow-md shadow-rose-400'
                   : isHoveringClickable
-                  ? 'w-3 h-3 bg-white border border-blue-600 shadow-sm'
+                  ? 'w-3.5 h-3.5 bg-white border border-blue-600 shadow-sm'
                   : 'w-2 h-2 bg-blue-500'
               }`}
             />
@@ -211,10 +251,10 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
         </div>
       )}
 
-      {/* 7. Floating Touchless Control Dock (Ultra-discrete at bottom right/left) */}
-      <div className="fixed bottom-3 right-3 lg:bottom-4 lg:right-4 z-40 select-none">
+      {/* 9. Floating Touchless Control Dock */}
+      <div className="fixed bottom-3 right-3 lg:bottom-4 lg:right-4 z-40 select-none gesture-hud-element">
         {isDockMinimized ? (
-          /* Minimized pill: tiny high-tech indicator */
+          /* Minimized pill */
           <button
             type="button"
             onClick={onToggleDockMinimized}
@@ -245,7 +285,7 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
                   <span className="text-[10px] text-slate-400">
                     {isModelReady
                       ? state.hasHand
-                        ? 'Main détectée'
+                        ? 'Main active (Stable)'
                         : 'En attente de main...'
                       : 'Chargement IA...'}
                   </span>
@@ -274,7 +314,7 @@ export const GestureHUD: React.FC<GestureHUDProps> = ({
 
             {/* Gesture Activity Status */}
             <div className="flex items-center justify-between text-xs px-1">
-              <span className="text-slate-400 text-[11px]">Geste actif :</span>
+              <span className="text-slate-400 text-[11px]">Action :</span>
               <span className="font-extrabold text-blue-400 flex items-center space-x-1">
                 {state.activeGestureName || 'Pointeur'}
               </span>

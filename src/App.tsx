@@ -15,6 +15,7 @@ import { ChatView } from './components/ChatView';
 import { ProfileView } from './components/ProfileView';
 import { FriendsModal } from './components/FriendsModal';
 import { MenuPageView } from './components/SlidingPanel';
+import { ValidationCodeModal } from './components/ValidationCodeModal';
 import {
   Film,
   MessageCircle,
@@ -30,7 +31,8 @@ import {
   Menu,
   Lock,
   Unlock,
-  ShieldCheck
+  ShieldCheck,
+  Laptop
 } from 'lucide-react';
 
 export default function App() {
@@ -43,6 +45,14 @@ export default function App() {
   const [latestPushNotification, setLatestPushNotification] = useState<AppNotification | null>(null);
   const [isLiveConnected, setIsLiveConnected] = useState(true);
   const [showGlobalDocSearch, setShowGlobalDocSearch] = useState(false);
+
+  // Cross-device PC login states
+  const [showValidationCodeModal, setShowValidationCodeModal] = useState(false);
+  const [pendingPcAlert, setPendingPcAlert] = useState<{
+    code: string;
+    deviceInfo: string;
+    sessionId: string;
+  } | null>(null);
 
   // Social Media Features State
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
@@ -236,6 +246,19 @@ export default function App() {
           api.auth.getMe().then((res) => setCurrentUser(res.user)).catch(() => {
             handleLogout();
           });
+        } else if (event === 'PC_LOGIN_ATTEMPT') {
+          if (payload.userId === currentUser.id) {
+            setPendingPcAlert({
+              code: payload.code,
+              deviceInfo: payload.deviceInfo,
+              sessionId: payload.sessionId
+            });
+            setShowValidationCodeModal(true);
+          }
+        } else if (event === 'PC_LOGIN_APPROVED') {
+          if (payload.userId === currentUser.id) {
+            setPendingPcAlert(null);
+          }
         }
       });
 
@@ -718,8 +741,44 @@ export default function App() {
             onOpenFriendsModal={() => setShowFriendsModal(true)}
             unreadMessagesCount={unreadDirectMessagesCount}
             pendingFriendRequestsCount={pendingFriendRequestsCount}
+            onOpenValidationCodeModal={() => setShowValidationCodeModal(true)}
           />
         </div>
+
+        {/* Global Floating Banner for Pending PC Login Attempt */}
+        {pendingPcAlert && (
+          <div className="shrink-0 px-3 py-2 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white shadow-md z-20 flex items-center justify-between gap-3 animate-fadeIn">
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <Laptop className="w-4 h-4 text-white animate-pulse" />
+              </div>
+              <div className="min-w-0 text-xs">
+                <span className="font-extrabold block truncate">
+                  Connexion PC en attente de validation !
+                </span>
+                <span className="text-amber-100 text-[11px] truncate block">
+                  Code : <strong className="font-mono text-white text-xs tracking-widest">{pendingPcAlert.code}</strong> · {pendingPcAlert.deviceInfo}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowValidationCodeModal(true)}
+                className="px-3 py-1.5 rounded-xl bg-white text-amber-700 font-extrabold text-xs shadow-sm hover:bg-amber-50 transition cursor-pointer"
+              >
+                Autoriser / Voir
+              </button>
+              <button
+                type="button"
+                onClick={() => setPendingPcAlert(null)}
+                className="w-7 h-7 rounded-lg bg-black/10 hover:bg-black/20 text-white flex items-center justify-center text-xs transition cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main Tab Content */}
         <main
@@ -975,6 +1034,16 @@ export default function App() {
         onOpenUserProfile={handleOpenUserProfile}
         onOpenChatWithUser={handleOpenChatWithUser}
         onNavigateTab={(tab) => navigateToTab(tab)}
+      />
+
+      {/* Validation Code & PC Security Modal */}
+      <ValidationCodeModal
+        currentUser={currentUser}
+        isOpen={showValidationCodeModal}
+        onClose={() => {
+          setShowValidationCodeModal(false);
+          setPendingPcAlert(null);
+        }}
       />
     </div>
   );

@@ -43,6 +43,7 @@ interface HeaderProps {
   onOpenFriendsModal?: () => void;
   unreadMessagesCount?: number;
   pendingFriendRequestsCount?: number;
+  onOpenValidationCodeModal?: () => void;
 }
 
 const PAGE_METADATA: Record<
@@ -117,7 +118,8 @@ export const Header: React.FC<HeaderProps> = ({
   latestPushNotification,
   onDismissPushNotification,
   onOpenFriendsModal,
-  pendingFriendRequestsCount = 0
+  pendingFriendRequestsCount = 0,
+  onOpenValidationCodeModal
 }) => {
   const [isNotificationBoxOpen, setIsNotificationBoxOpen] = React.useState(false);
   const currentMeta = PAGE_METADATA[activeTab] || PAGE_METADATA.feed;
@@ -224,6 +226,7 @@ export const Header: React.FC<HeaderProps> = ({
               isOpen={isNotificationBoxOpen}
               onToggleOpen={() => setIsNotificationBoxOpen((prev) => !prev)}
               onClose={() => setIsNotificationBoxOpen(false)}
+              onOpenValidationCodeModal={onOpenValidationCodeModal}
             />
 
             <button

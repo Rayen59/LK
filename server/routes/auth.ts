@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
-import { User } from "../../src/types";
+import { User, AppNotification } from "../../src/types";
 import { db, saveDatabase, checkUserBanStatus } from "../db";
+import { broadcast } from "../realtime";
 
 export const authRouter = Router();
 
@@ -12,6 +13,38 @@ interface VerificationEntry {
   attempts: number;
 }
 const verificationCodes: Map<string, VerificationEntry> = new Map();
+
+// In-memory Cross-Device PC Login Sessions (sessionId -> PcSessionEntry)
+export interface PcSessionEntry {
+  sessionId: string;
+  userId: string;
+  email: string;
+  code: string;
+  deviceInfo: string;
+  createdAt: number;
+  expiresAt: number;
+  status: "pending" | "approved" | "rejected" | "used";
+  user: User;
+}
+export const pcSessions: Map<string, PcSessionEntry> = new Map();
+
+// Account-level dynamic security code for cross-device sync (userId -> code)
+export const userValidationCodes: Map<string, { code: string; expiresAt: number; createdAt: number }> = new Map();
+
+export function getOrCreateUserValidationCode(userId: string): { code: string; expiresInSeconds: number } {
+  const now = Date.now();
+  const existing = userValidationCodes.get(userId);
+  if (existing && existing.expiresAt > now) {
+    return {
+      code: existing.code,
+      expiresInSeconds: Math.max(1, Math.round((existing.expiresAt - now) / 1000))
+    };
+  }
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = now + 10 * 60 * 1000; // 10 minutes
+  userValidationCodes.set(userId, { code, expiresAt, createdAt: now });
+  return { code, expiresInSeconds: 600 };
+}
 
 // Generate captcha challenge tokens
 interface CaptchaChallenge {
@@ -27,6 +60,11 @@ setInterval(() => {
   for (const [key, value] of verificationCodes.entries()) {
     if (value.expiresAt < now) {
       verificationCodes.delete(key);
+    }
+  }
+  for (const [key, value] of pcSessions.entries()) {
+    if (value.expiresAt < now) {
+      pcSessions.delete(key);
     }
   }
   for (const [key, value] of captchaChallenges.entries()) {
@@ -241,7 +279,7 @@ authRouter.post("/register", (req: Request, res: Response) => {
 
 // Connexion (Login)
 authRouter.post("/login", (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, isPcDevice, deviceInfo } = req.body;
   if (!email || !password) {
     res.status(400).json({ error: "Veuillez renseigner votre email et votre mot de passe." });
     return;
@@ -274,8 +312,274 @@ authRouter.post("/login", (req: Request, res: Response) => {
     reactivated = true;
   }
 
+  // Check if login is from PC (explicit flag or desktop browser user agent)
+  const userAgent = req.headers["user-agent"] || "";
+  const isDesktopUA = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  const shouldRequirePcVerification = isPcDevice === true || (isPcDevice !== false && isDesktopUA);
+
+  if (shouldRequirePcVerification) {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const sessionId = "pcsess_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+    const resolvedDeviceInfo = deviceInfo || (isDesktopUA ? "Ordinateur PC / Mac" : "Ordinateur de bureau");
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    pcSessions.set(sessionId, {
+      sessionId,
+      userId: user.id,
+      email: user.email,
+      code,
+      deviceInfo: resolvedDeviceInfo,
+      createdAt: Date.now(),
+      expiresAt,
+      status: "pending",
+      user
+    });
+
+    userValidationCodes.set(user.id, {
+      code,
+      expiresAt,
+      createdAt: Date.now()
+    });
+
+    // Send high-priority in-app notification to the user's account (visible on mobile / app)
+    const securityNotif: AppNotification = {
+      id: "notif_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+      recipientId: user.id,
+      actorId: "usr_system_security",
+      actorName: "Sécurité MK",
+      actorAvatar: "https://api.dicebear.com/7.x/identicon/svg?seed=MKSafety&backgroundColor=0284c7",
+      actorPromo: "Protection Compte",
+      type: "pc_login_code",
+      title: "💻 Connexion PC : Code de validation",
+      message: `Tentative de connexion sur PC. Votre code de validation est : ${code}. Ouvrez Paramètres > Code de validation pour approuver l'accès.`,
+      targetId: sessionId,
+      targetType: "security",
+      isRead: false,
+      createdAt: new Date().toISOString()
+    };
+    db.notifications = db.notifications || [];
+    db.notifications.unshift(securityNotif);
+    if (db.notifications.length > 300) {
+      db.notifications = db.notifications.slice(0, 300);
+    }
+    saveDatabase();
+    broadcast("NEW_NOTIFICATION", securityNotif);
+
+    // Broadcast SSE event so any open phone view reacts in real-time
+    broadcast("PC_LOGIN_ATTEMPT", {
+      sessionId,
+      userId: user.id,
+      code,
+      deviceInfo: resolvedDeviceInfo,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(expiresAt).toISOString()
+    });
+
+    console.log(`[MK AUTH] Connexion PC pour ${user.email} -> Code : ${code} (Session ${sessionId})`);
+
+    res.json({
+      requirePcValidation: true,
+      sessionId,
+      email: user.email,
+      prenom: user.prenom,
+      nom: user.nom,
+      deviceInfo: resolvedDeviceInfo,
+      previewCode: code,
+      expiresInSeconds: 600,
+      message: "Connexion depuis un PC détectée. Veuillez saisir le code de validation affiché dans vos Paramètres sur votre téléphone."
+    });
+    return;
+  }
+
   const { password: _, ...safeUser } = user;
   res.json({ user: safeUser, token: user.id, reactivated });
+});
+
+// Endpoint: Obtenir le code de validation actif & les demandes PC en attente (depuis le téléphone)
+authRouter.get("/pc-validation-code", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non autorisé" });
+    return;
+  }
+
+  const now = Date.now();
+  // Find any active pending PC session for this user
+  let activePending: PcSessionEntry | null = null;
+  for (const sess of pcSessions.values()) {
+    if (sess.userId === user.id && sess.status === "pending" && sess.expiresAt > now) {
+      activePending = sess;
+      break;
+    }
+  }
+
+  // Get or create dynamic user code
+  const codeInfo = getOrCreateUserValidationCode(user.id);
+  const activeCode = activePending ? activePending.code : codeInfo.code;
+
+  res.json({
+    hasPendingPcLogin: Boolean(activePending),
+    pendingSession: activePending
+      ? {
+          sessionId: activePending.sessionId,
+          code: activePending.code,
+          deviceInfo: activePending.deviceInfo,
+          createdAt: new Date(activePending.createdAt).toISOString(),
+          expiresInSeconds: Math.max(1, Math.round((activePending.expiresAt - now) / 1000))
+        }
+      : null,
+    activeValidationCode: activeCode,
+    codeExpiresInSeconds: activePending
+      ? Math.max(1, Math.round((activePending.expiresAt - now) / 1000))
+      : codeInfo.expiresInSeconds
+  });
+});
+
+// Endpoint: Approuver immédiatement la connexion PC depuis le téléphone (1-clic)
+authRouter.post("/approve-pc-login", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non autorisé" });
+    return;
+  }
+
+  const { sessionId } = req.body;
+  let targetSession: PcSessionEntry | undefined;
+
+  if (sessionId) {
+    targetSession = pcSessions.get(sessionId);
+  } else {
+    for (const sess of pcSessions.values()) {
+      if (sess.userId === user.id && sess.status === "pending" && sess.expiresAt > Date.now()) {
+        targetSession = sess;
+        break;
+      }
+    }
+  }
+
+  if (!targetSession) {
+    res.status(404).json({ error: "Session de connexion PC introuvable ou expirée." });
+    return;
+  }
+
+  if (targetSession.userId !== user.id) {
+    res.status(403).json({ error: "Vous n'êtes pas autorisé à approuver cette session." });
+    return;
+  }
+
+  targetSession.status = "approved";
+  const { password: _, ...safeUser } = user;
+
+  // Broadcast immediate unlock event to the PC
+  broadcast("PC_LOGIN_APPROVED", {
+    sessionId: targetSession.sessionId,
+    userId: user.id,
+    token: user.id,
+    user: safeUser
+  });
+
+  res.json({
+    success: true,
+    message: "Connexion PC autorisée avec succès ! Votre ordinateur a été déverrouillé."
+  });
+});
+
+// Endpoint: Refuser la connexion PC depuis le téléphone
+authRouter.post("/reject-pc-login", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non autorisé" });
+    return;
+  }
+
+  const { sessionId } = req.body;
+  const targetSession = sessionId ? pcSessions.get(sessionId) : null;
+  if (targetSession && targetSession.userId === user.id) {
+    targetSession.status = "rejected";
+    broadcast("PC_LOGIN_REJECTED", {
+      sessionId: targetSession.sessionId,
+      message: "La tentative de connexion a été refusée depuis votre téléphone."
+    });
+  }
+
+  res.json({ success: true, message: "Connexion PC refusée." });
+});
+
+// Endpoint: Vérifier le code saisi sur le PC
+authRouter.post("/verify-pc-login", (req: Request, res: Response) => {
+  const { sessionId, code } = req.body;
+  if (!sessionId || !code) {
+    res.status(400).json({ error: "Session et code de validation requis." });
+    return;
+  }
+
+  const session = pcSessions.get(sessionId);
+  if (!session) {
+    res.status(404).json({ error: "Session de connexion introuvable ou expirée. Veuillez recommencer la connexion." });
+    return;
+  }
+
+  if (Date.now() > session.expiresAt) {
+    pcSessions.delete(sessionId);
+    res.status(400).json({ error: "Ce code a expiré. Veuillez relancer la connexion." });
+    return;
+  }
+
+  if (session.status === "rejected") {
+    res.status(403).json({ error: "Cette tentative de connexion a été refusée depuis votre téléphone." });
+    return;
+  }
+
+  const cleanCode = String(code).trim().replace(/\s+/g, "");
+  const userCodeEntry = userValidationCodes.get(session.userId);
+  const matchesUserCode = userCodeEntry && userCodeEntry.code === cleanCode && userCodeEntry.expiresAt > Date.now();
+
+  if (session.code !== cleanCode && !matchesUserCode) {
+    res.status(400).json({
+      error: "Code de validation incorrect. Ouvrez les Paramètres de votre téléphone > « Code de validation » pour vérifier les 6 chiffres."
+    });
+    return;
+  }
+
+  session.status = "used";
+  const { password: _, ...safeUser } = session.user;
+
+  res.json({
+    success: true,
+    token: session.user.id,
+    user: safeUser,
+    message: "Connexion autorisée et vérifiée avec succès !"
+  });
+});
+
+// Endpoint: Générer un nouveau code de validation à la demande
+authRouter.post("/generate-validation-code", (req: Request, res: Response) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const user = db.users.find((u) => u.id === token);
+  if (!user) {
+    res.status(401).json({ error: "Non autorisé" });
+    return;
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  userValidationCodes.set(user.id, { code, expiresAt, createdAt: Date.now() });
+
+  // Update any pending session code for consistency
+  for (const sess of pcSessions.values()) {
+    if (sess.userId === user.id && sess.status === "pending" && sess.expiresAt > Date.now()) {
+      sess.code = code;
+    }
+  }
+
+  res.json({
+    activeValidationCode: code,
+    codeExpiresInSeconds: 600,
+    message: "Nouveau code de validation généré avec succès !"
+  });
 });
 
 // Current user profile

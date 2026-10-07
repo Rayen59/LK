@@ -33,9 +33,16 @@ import {
   Eye,
   EyeOff,
   Film,
-  Sparkles
+  Sparkles,
+  Laptop,
+  Smartphone,
+  Copy,
+  Check,
+  Info,
+  RefreshCw
 } from 'lucide-react';
 import { MainTabType } from './Header';
+import { subscribeToLiveUpdates } from '../lib/api';
 
 export interface MenuPageProps {
   currentUser: User;
@@ -54,7 +61,7 @@ export interface MenuPageProps {
   onRefreshPosts?: () => void;
 }
 
-type MenuSubView = 'main' | 'activity' | 'profile_edit' | 'password_security';
+type MenuSubView = 'main' | 'activity' | 'profile_edit' | 'password_security' | 'validation_code';
 type ActivityTab = 'likes' | 'comments' | 'shares';
 
 export const MenuPageView: React.FC<MenuPageProps> = ({
@@ -73,6 +80,20 @@ export const MenuPageView: React.FC<MenuPageProps> = ({
 }) => {
   const [subView, setSubView] = useState<MenuSubView>('main');
   const [activityTab, setActivityTab] = useState<ActivityTab>('likes');
+
+  // PC Validation Code state
+  const [validationCode, setValidationCode] = useState<string>('------');
+  const [validationExpiresIn, setValidationExpiresIn] = useState<number>(600);
+  const [pendingPcSession, setPendingPcSession] = useState<{
+    sessionId: string;
+    code: string;
+    deviceInfo: string;
+    createdAt: string;
+    expiresInSeconds: number;
+  } | null>(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Activity data state
   const [activityLoading, setActivityLoading] = useState(false);
@@ -112,6 +133,113 @@ export const MenuPageView: React.FC<MenuPageProps> = ({
     setPromo(currentUser.promo || '');
     setBio(currentUser.bio || '');
   }, [currentUser]);
+
+  const loadValidationCodeData = async () => {
+    try {
+      setCodeLoading(true);
+      const res = await api.auth.getPcValidationCode();
+      if (res.activeValidationCode) {
+        setValidationCode(res.activeValidationCode);
+      }
+      setValidationExpiresIn(res.codeExpiresInSeconds || 600);
+      setPendingPcSession(res.pendingSession || null);
+    } catch {
+      // ignore
+    } finally {
+      setCodeLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadValidationCodeData();
+  }, []);
+
+  useEffect(() => {
+    if (subView === 'validation_code') {
+      loadValidationCodeData();
+    }
+  }, [subView]);
+
+  // Live SSE listener for real-time PC login attempts
+  useEffect(() => {
+    const unsubscribe = subscribeToLiveUpdates((event, payload) => {
+      if (event === 'PC_LOGIN_ATTEMPT' && payload.userId === currentUser.id) {
+        setValidationCode(payload.code);
+        setPendingPcSession({
+          sessionId: payload.sessionId,
+          code: payload.code,
+          deviceInfo: payload.deviceInfo,
+          createdAt: payload.createdAt,
+          expiresInSeconds: 600
+        });
+        setValidationExpiresIn(600);
+        showNotice('success', '💻 Tentative de connexion PC détectée ! Code : ' + payload.code);
+      } else if (event === 'PC_LOGIN_APPROVED' && payload.userId === currentUser.id) {
+        setPendingPcSession(null);
+        showNotice('success', '✅ Connexion PC approuvée avec succès !');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser.id]);
+
+  // Countdown timer for code expiry
+  useEffect(() => {
+    if (validationExpiresIn <= 0) return;
+    const timer = setInterval(() => {
+      setValidationExpiresIn((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [validationExpiresIn]);
+
+  const handleCopyValidationCode = () => {
+    if (!validationCode || validationCode.includes('-')) return;
+    navigator.clipboard.writeText(validationCode);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  };
+
+  const handleApprovePcSession = async () => {
+    if (!pendingPcSession) return;
+    try {
+      setActionLoading(true);
+      await api.auth.approvePcLogin({ sessionId: pendingPcSession.sessionId });
+      setPendingPcSession(null);
+      showNotice('success', '✅ Ordinateur (PC) déverrouillé avec succès !');
+    } catch (err: any) {
+      showNotice('error', err.message || "Erreur lors de l'approbation du PC.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectPcSession = async () => {
+    if (!pendingPcSession) return;
+    try {
+      setActionLoading(true);
+      await api.auth.rejectPcLogin({ sessionId: pendingPcSession.sessionId });
+      setPendingPcSession(null);
+      showNotice('error', '❌ Connexion PC refusée.');
+    } catch (err: any) {
+      showNotice('error', err.message || 'Erreur lors du refus.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRefreshValidationCode = async () => {
+    try {
+      setActionLoading(true);
+      const res = await api.auth.refreshValidationCode();
+      setValidationCode(res.activeValidationCode);
+      setValidationExpiresIn(res.codeExpiresInSeconds || 600);
+      showNotice('success', 'Nouveau code généré avec succès !');
+    } catch (err: any) {
+      showNotice('error', err.message || 'Erreur lors de la génération du code.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const loadUserActivity = async () => {
     setActivityLoading(true);
@@ -920,6 +1048,173 @@ export const MenuPageView: React.FC<MenuPageProps> = ({
         </div>
       )}
 
+      {/* SUB-VIEW 4: CODE DE VALIDATION (CONNEXION PC & APPAREILS) */}
+      {subView === 'validation_code' && (
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 bg-white dark:bg-[#0f172a] p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setSubView('main')}
+              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 transition cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                  Code de validation
+                </h2>
+                <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[10px] font-black text-blue-700 dark:text-blue-300">
+                  Connexion PC 💻
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Générez votre code sécurisé et validez les connexions depuis votre ordinateur
+              </p>
+            </div>
+          </div>
+
+          {/* Pending PC session approval card */}
+          {pendingPcSession && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/30 dark:border-amber-500/40 space-y-3 animate-pulse">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                  <Laptop className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="font-black text-slate-900 dark:text-white text-sm">
+                      Tentative de connexion PC en cours !
+                    </span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                    {pendingPcSession.deviceInfo} tente de se connecter à votre compte.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-white/80 dark:bg-[#0a1120]/80 rounded-xl border border-amber-500/20 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  Code demandé par le PC :
+                </span>
+                <span className="font-mono text-base font-black tracking-widest text-amber-600 dark:text-amber-400">
+                  {pendingPcSession.code}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleApprovePcSession}
+                  disabled={actionLoading}
+                  className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs shadow-md flex items-center justify-center space-x-2 transition cursor-pointer disabled:opacity-50"
+                >
+                  {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  <span>Autoriser & Déverrouiller le PC</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRejectPcSession}
+                  disabled={actionLoading}
+                  className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-rose-600 dark:text-rose-400 font-extrabold text-xs transition cursor-pointer disabled:opacity-50"
+                >
+                  Refuser la connexion
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Active 6-digit dynamic code card */}
+          <div className="bg-white dark:bg-[#0f172a] p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs text-center space-y-4">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold text-xs">
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Votre code de validation actuel pour PC</span>
+            </div>
+
+            <div className="py-2">
+              {codeLoading ? (
+                <div className="py-6 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center space-x-2 sm:space-x-3 select-all">
+                  {validationCode.split('').map((digit, idx) => (
+                    <span
+                      key={idx}
+                      className="w-10 sm:w-12 h-14 sm:h-16 rounded-2xl bg-slate-50 dark:bg-[#121c33] border-2 border-blue-500/40 dark:border-blue-400/30 flex items-center justify-center font-mono text-2xl sm:text-3xl font-black text-slate-900 dark:text-white shadow-sm"
+                    >
+                      {digit}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center space-x-3 text-xs">
+              <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#121c33] border border-slate-200 dark:border-slate-800 font-semibold text-slate-600 dark:text-slate-300">
+                <Clock className="w-3.5 h-3.5 text-blue-500" />
+                <span>
+                  Valable encore :{' '}
+                  <strong className="text-blue-600 dark:text-blue-400 font-mono">
+                    {Math.floor(validationExpiresIn / 60)}:{(validationExpiresIn % 60).toString().padStart(2, '0')}
+                  </strong>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCopyValidationCode}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#121c33] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 font-bold text-slate-700 dark:text-slate-200 transition cursor-pointer"
+              >
+                {codeCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{codeCopied ? 'Copié !' : 'Copier'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRefreshValidationCode}
+                disabled={actionLoading}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${actionLoading ? 'animate-spin' : ''}`} />
+                <span>Nouveau code</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Guide explicatif pas à pas */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 space-y-2.5">
+            <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center space-x-2 text-xs sm:text-sm">
+              <Info className="w-4 h-4 text-blue-500" />
+              <span>Comment déverrouiller votre connexion sur votre PC ?</span>
+            </h4>
+            <ol className="space-y-2 text-slate-600 dark:text-slate-300 text-xs">
+              <li className="flex items-start space-x-2">
+                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-black flex items-center justify-center shrink-0 text-[11px]">
+                  1
+                </span>
+                <span>Ouvrez le site MK sur votre ordinateur (PC) et saisissez votre email et mot de passe.</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-black flex items-center justify-center shrink-0 text-[11px]">
+                  2
+                </span>
+                <span>Votre PC affiche un écran de validation demandant un code de validation à 6 chiffres.</span>
+              </li>
+              <li className="flex items-start space-x-2">
+                <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-black flex items-center justify-center shrink-0 text-[11px]">
+                  3
+                </span>
+                <span>
+                  Saisissez les 6 chiffres affichés ci-dessus dans les cases de votre PC, ou cliquez sur le bouton vert <strong>« Autoriser le PC »</strong> ci-dessus !
+                </span>
+              </li>
+            </ol>
+          </div>
+        </div>
+      )}
+
       {/* MAIN MENU VIEW */}
       {subView === 'main' && (
         <>
@@ -1073,7 +1368,37 @@ export const MenuPageView: React.FC<MenuPageProps> = ({
               <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
             </button>
 
-            {/* 4. Dark mode toggle row */}
+            {/* 4. Code de validation (Connexion PC & Appareils) */}
+            <button
+              type="button"
+              onClick={() => setSubView('validation_code')}
+              className="w-full px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition cursor-pointer text-left group"
+            >
+              <div className="flex items-center space-x-3.5">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 relative">
+                  <Laptop className="w-5 h-5" />
+                  {pendingPcSession && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-500 animate-ping" />
+                  )}
+                </div>
+                <div>
+                  <div className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition flex items-center space-x-2">
+                    <span>Code de validation (Connexion PC)</span>
+                    {pendingPcSession && (
+                      <span className="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/60 text-[10px] font-black text-amber-700 dark:text-amber-300 animate-pulse">
+                        Connexion en attente !
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Générez votre code à 6 chiffres ou autorisez une connexion depuis un ordinateur
+                  </div>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
+            </button>
+
+            {/* 5. Dark mode toggle row */}
             <button
               type="button"
               onClick={onToggleDarkMode}

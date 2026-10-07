@@ -14,14 +14,15 @@ import {
   X,
   Sparkles,
   Send,
-  AlertCircle
+  AlertCircle,
+  Laptop
 } from 'lucide-react';
 
 interface NotificationCenterProps {
   currentUser: User;
   notifications: AppNotification[];
   onNotificationsChange: (notifications: AppNotification[]) => void;
-  onNavigateTab: (tab: 'feed' | 'forums' | 'quizzes' | 'polls' | 'spaces' | 'admin') => void;
+  onNavigateTab: (tab: 'feed' | 'forums' | 'quizzes' | 'polls' | 'spaces' | 'admin' | 'menu') => void;
   notificationsEnabled: boolean;
   onToggleNotificationsEnabled: () => void;
   latestPushNotification: AppNotification | null;
@@ -29,6 +30,7 @@ interface NotificationCenterProps {
   isOpen: boolean;
   onToggleOpen: () => void;
   onClose: () => void;
+  onOpenValidationCodeModal?: () => void;
 }
 
 export const NotificationCenter: React.FC<NotificationCenterProps> = ({
@@ -43,6 +45,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   isOpen,
   onToggleOpen,
   onClose,
+  onOpenValidationCodeModal
 }) => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [isSendingTest, setIsSendingTest] = useState(false);
@@ -107,7 +110,16 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     }
     onClose();
 
-    // Route to appropriate tab
+    // Route to appropriate tab or open PC validation modal
+    if (notif.targetType === 'security' || notif.type === 'pc_login_code') {
+      if (onOpenValidationCodeModal) {
+        onOpenValidationCodeModal();
+      } else {
+        onNavigateTab('menu');
+      }
+      return;
+    }
+
     if (notif.targetType === 'post') {
       onNavigateTab('feed');
     } else if (notif.targetType === 'quiz') {
@@ -136,6 +148,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
   const renderIcon = (type: AppNotification['type']) => {
     switch (type) {
+      case 'pc_login_code':
+        return <Laptop className="w-4 h-4 text-amber-500" />;
       case 'post_like':
         return <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />;
       case 'post_comment':

@@ -126,7 +126,21 @@ export const api = {
       });
     },
 
-    login: async (credentials: { email: string; password?: string }): Promise<{ user: User; token: string }> => {
+    login: async (credentials: {
+      email: string;
+      password?: string;
+      isPcDevice?: boolean;
+      deviceInfo?: string;
+    }): Promise<{
+      user?: User;
+      token?: string;
+      reactivated?: boolean;
+      requirePcValidation?: boolean;
+      sessionId?: string;
+      previewCode?: string;
+      expiresInSeconds?: number;
+      message?: string;
+    }> => {
       const data = await fetchWithAuth('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
@@ -135,6 +149,63 @@ export const api = {
         setStoredToken(data.token);
       }
       return data;
+    },
+
+    verifyPcLogin: async (params: {
+      sessionId: string;
+      code: string;
+    }): Promise<{ success: boolean; token: string; user: User; message: string }> => {
+      const data = await fetchWithAuth('/api/auth/verify-pc-login', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+      if (data.token) {
+        setStoredToken(data.token);
+      }
+      return data;
+    },
+
+    getPcValidationCode: async (): Promise<{
+      hasPendingPcLogin: boolean;
+      pendingSession: {
+        sessionId: string;
+        code: string;
+        deviceInfo: string;
+        createdAt: string;
+        expiresInSeconds: number;
+      } | null;
+      activeValidationCode: string;
+      codeExpiresInSeconds: number;
+    }> => {
+      return fetchWithAuth('/api/auth/pc-validation-code');
+    },
+
+    approvePcLogin: async (params?: {
+      sessionId?: string;
+    }): Promise<{ success: boolean; message: string }> => {
+      return fetchWithAuth('/api/auth/approve-pc-login', {
+        method: 'POST',
+        body: JSON.stringify(params || {}),
+      });
+    },
+
+    rejectPcLogin: async (params?: {
+      sessionId?: string;
+    }): Promise<{ success: boolean; message: string }> => {
+      return fetchWithAuth('/api/auth/reject-pc-login', {
+        method: 'POST',
+        body: JSON.stringify(params || {}),
+      });
+    },
+
+    refreshValidationCode: async (): Promise<{
+      activeValidationCode: string;
+      codeExpiresInSeconds: number;
+      message: string;
+    }> => {
+      return fetchWithAuth('/api/auth/generate-validation-code', {
+        method: 'POST',
+      });
     },
 
     getMe: async (): Promise<{ user: User }> => {

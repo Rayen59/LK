@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User } from '../types';
-import { api } from '../lib/api';
+import { api, subscribeToLiveUpdates } from '../lib/api';
 import {
   User as UserIcon,
   Mail,
@@ -13,7 +13,14 @@ import {
   Loader2,
   ArrowLeft,
   KeyRound,
-  Check
+  Check,
+  Laptop,
+  Smartphone,
+  Copy,
+  Info,
+  Sparkles,
+  ExternalLink,
+  ShieldAlert
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -21,10 +28,56 @@ interface AuthModalProps {
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
-  // Mode: 'login' | 'register' | 'forgot'
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
+  // Mode: 'login' | 'register' | 'forgot' | 'pc_verify'
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot' | 'pc_verify'>('login');
   // Register sub-step: 1 (informations) | 2 (vérification de sécurité)
   const [registerStep, setRegisterStep] = useState<1 | 2>(1);
+
+  // Détection 100% automatique et professionnelle du type d'appareil (PC / Mac / Linux vs Smartphone)
+  const [detected] = useState<{
+    isPc: boolean;
+    deviceName: string;
+    osName: string;
+    browserName: string;
+  }>(() => {
+    if (typeof window === 'undefined') {
+      return { isPc: true, deviceName: 'Ordinateur (PC)', osName: 'PC', browserName: 'Navigateur Web' };
+    }
+    const ua = navigator.userAgent || '';
+    const isMobileUA = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isIPad = /iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isSmallScreen = window.innerWidth < 768;
+    const isPc = !isMobileUA && !isIPad && !isSmallScreen;
+
+    let osName = 'Système';
+    if (/Windows/i.test(ua)) osName = 'Windows';
+    else if (/Macintosh|Mac OS X/i.test(ua)) osName = 'macOS';
+    else if (/Linux/i.test(ua)) osName = 'Linux';
+    else if (/iPhone|iPad|iPod/i.test(ua)) osName = 'iOS';
+    else if (/Android/i.test(ua)) osName = 'Android';
+
+    let browserName = 'Navigateur';
+    if (/Edg/i.test(ua)) browserName = 'Edge';
+    else if (/Chrome/i.test(ua)) browserName = 'Chrome';
+    else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browserName = 'Safari';
+    else if (/Firefox/i.test(ua)) browserName = 'Firefox';
+
+    const deviceName = isPc
+      ? `Ordinateur (${osName} · ${browserName})`
+      : `Smartphone (${osName} · ${browserName})`;
+
+    return { isPc, deviceName, osName, browserName };
+  });
+
+  // Cross-device PC login states
+  const [pcSessionId, setPcSessionId] = useState<string | null>(null);
+  const [pcPreviewCode, setPcPreviewCode] = useState<string | null>(null);
+  const [pcCountdown, setPcCountdown] = useState<number>(600);
+  const [pcDigits, setPcDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const pcDigitRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [showPhoneSimulator, setShowPhoneSimulator] = useState<boolean>(false);
+  const [pcVerifying, setPcVerifying] = useState<boolean>(false);
+  const [pcApprovedNotice, setPcApprovedNotice] = useState<string | null>(null);
 
   // Form inputs
   const [username, setUsername] = useState('');
@@ -72,6 +125,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
     return () => clearInterval(timer);
   }, [codeCountdown]);
 
+  // Timer for PC validation countdown
+  useEffect(() => {
+    let timer: any;
+    if (authMode === 'pc_verify' && pcCountdown > 0) {
+      timer = setInterval(() => setPcCountdown((c) => Math.max(0, c - 1)), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [authMode, pcCountdown]);
+
+  // Real-time listener for cross-device PC approval
+  useEffect(() => {
+    if (authMode !== 'pc_verify' || !pcSessionId) return;
+
+    const unsubscribe = subscribeToLiveUpdates((event, payload) => {
+      if (event === 'PC_LOGIN_APPROVED' && payload.sessionId === pcSessionId) {
+        setPcApprovedNotice('Connexion approuvée depuis votre téléphone !');
+        setTimeout(() => {
+          onSuccess(payload.user);
+        }, 900);
+      } else if (event === 'PC_LOGIN_REJECTED' && payload.sessionId === pcSessionId) {
+        setError('La tentative de connexion a été refusée depuis votre téléphone.');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [authMode, pcSessionId, onSuccess]);
+
   // Init captcha challenge
   const loadCaptcha = async () => {
     try {
@@ -88,6 +168,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
   useEffect(() => {
     setError(null);
     setReactivatedBanner(false);
+    setPcApprovedNotice(null);
   }, [authMode, registerStep]);
 
   // Handle Login
@@ -101,23 +182,102 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
 
     setLoading(true);
     try {
+      const isPc = detected.isPc;
       const res = await api.auth.login({
         email: email.trim(),
-        password
+        password,
+        isPcDevice: isPc,
+        deviceInfo: detected.deviceName
       });
+
+      // If PC cross-device validation is required
+      if (res.requirePcValidation && res.sessionId) {
+        setPcSessionId(res.sessionId);
+        setPcPreviewCode(res.previewCode || null);
+        setPcCountdown(res.expiresInSeconds || 600);
+        setPcDigits(['', '', '', '', '', '']);
+        setAuthMode('pc_verify');
+        return;
+      }
 
       if ((res as any).reactivated) {
         setReactivatedBanner(true);
         setTimeout(() => {
-          onSuccess(res.user);
+          onSuccess(res.user!);
         }, 1200);
       } else {
-        onSuccess(res.user);
+        onSuccess(res.user!);
       }
     } catch (err: any) {
       setError(err.message || 'Email ou mot de passe incorrect.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Verify PC validation digits entered on PC
+  const handleVerifyPcDigits = async (codeToVerify?: string) => {
+    const finalCode = (codeToVerify || pcDigits.join('')).trim();
+    if (!pcSessionId) return;
+    if (finalCode.length < 6) {
+      setError('Veuillez saisir les 6 chiffres du code de validation.');
+      return;
+    }
+
+    setPcVerifying(true);
+    setError(null);
+    try {
+      const res = await api.auth.verifyPcLogin({
+        sessionId: pcSessionId,
+        code: finalCode,
+      });
+      setPcApprovedNotice('Code validé avec succès ! Bienvenue sur PC.');
+      setTimeout(() => {
+        onSuccess(res.user);
+      }, 700);
+    } catch (err: any) {
+      setError(err.message || 'Code de validation incorrect.');
+    } finally {
+      setPcVerifying(false);
+    }
+  };
+
+  const handlePcDigitChange = (index: number, val: string) => {
+    // Paste support
+    if (val.length > 1) {
+      const sanitized = val.replace(/\D/g, '').slice(0, 6);
+      if (sanitized.length > 0) {
+        const next = [...pcDigits];
+        for (let i = 0; i < 6; i++) {
+          next[i] = sanitized[i] || '';
+        }
+        setPcDigits(next);
+        const nextFocus = Math.min(sanitized.length, 5);
+        pcDigitRefs.current[nextFocus]?.focus();
+        if (sanitized.length === 6) {
+          handleVerifyPcDigits(sanitized);
+        }
+      }
+      return;
+    }
+
+    const digit = val.slice(-1);
+    const next = [...pcDigits];
+    next[index] = digit;
+    setPcDigits(next);
+
+    if (digit && index < 5) {
+      pcDigitRefs.current[index + 1]?.focus();
+    }
+
+    if (next.every((d) => d !== '')) {
+      handleVerifyPcDigits(next.join(''));
+    }
+  };
+
+  const handlePcDigitKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !pcDigits[index] && index > 0) {
+      pcDigitRefs.current[index - 1]?.focus();
     }
   };
 
@@ -355,6 +515,40 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
 
         {/* Illustration dynamique */}
         <div className="w-full flex items-center justify-center py-2">
+          {authMode === 'pc_verify' && (
+            <div className="w-56 h-36 relative flex items-center justify-center">
+              <div className="absolute bottom-1 w-48 h-8 bg-slate-100 dark:bg-slate-800/60 rounded-full" />
+              
+              {/* Ordinateur PC mockup */}
+              <div className="absolute left-3 bottom-3 w-28 h-20 bg-slate-900 dark:bg-slate-800 rounded-lg p-1.5 shadow-lg border border-slate-700 flex flex-col justify-between">
+                <div className="w-full h-11 bg-slate-950 rounded flex flex-col items-center justify-center p-1 text-center border border-slate-800">
+                  <Laptop className="w-4 h-4 text-blue-400 mb-0.5 animate-pulse" />
+                  <span className="text-[7px] text-slate-400 font-mono">CONNEXION PC</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-700 rounded-sm mx-auto" />
+              </div>
+
+              {/* Signal de liaison */}
+              <div className="absolute z-10 flex items-center justify-center">
+                <span className="w-3 h-3 rounded-full bg-blue-500 animate-ping" />
+              </div>
+
+              {/* Téléphone Mobile mockup */}
+              <div className="absolute right-3 bottom-2 w-16 h-28 bg-[#1e293b] rounded-2xl p-1.5 shadow-xl flex flex-col items-center justify-between border-2 border-blue-500/80">
+                <div className="w-4 h-1 bg-slate-600 rounded-full mt-0.5" />
+                <div className="flex flex-col items-center">
+                  <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mb-1">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div className="text-[8px] font-black text-white tracking-widest font-mono">
+                    {pcPreviewCode || 'VALID'}
+                  </div>
+                </div>
+                <div className="w-5 h-0.5 bg-slate-600 rounded-full" />
+              </div>
+            </div>
+          )}
+
           {authMode === 'login' && (
             <div className="w-48 h-36 relative flex items-center justify-center">
               {/* Tapis / Ombre au sol */}
@@ -496,13 +690,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
           {/* 1. ÉCRAN DE CONNEXION */}
           {authMode === 'login' && (
             <div>
-              <div className="mb-4">
+              <div className="mb-3">
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                   Connexion
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Veuillez vous connecter pour continuer.
                 </p>
+              </div>
+
+              {/* Reconnaissance automatique et professionnelle de l'appareil connecté */}
+              <div className="mb-3.5 p-3 rounded-2xl bg-slate-50 dark:bg-[#121c32] border border-slate-200/90 dark:border-slate-800 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center space-x-2.5 min-w-0">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    detected.isPc
+                      ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400'
+                      : 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400'
+                  }`}>
+                    {detected.isPc ? <Laptop className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center space-x-1.5 truncate">
+                      <span>{detected.isPc ? 'Ordinateur détecté' : 'Smartphone détecté'}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                      {detected.deviceName} · Détection automatique
+                    </div>
+                  </div>
+                </div>
+
+                <div className="shrink-0 text-right">
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                    detected.isPc
+                      ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                      : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                  }`}>
+                    {detected.isPc ? '2FA Téléphone actif' : 'Accès mobile direct'}
+                  </span>
+                </div>
               </div>
 
               <form onSubmit={handleLoginSubmit} className="space-y-3">
@@ -589,6 +815,232 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                   )}
                 </button>
               </form>
+            </div>
+          )}
+
+          {/* 1.1 ÉCRAN DE VALIDATION CROISÉE PC (PC ➔ TÉLÉPHONE) */}
+          {authMode === 'pc_verify' && (
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-extrabold uppercase tracking-wide">
+                    Sécurité MK 💻
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Vérification PC
+                  </span>
+                </div>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+                  Validation par Téléphone 📱
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Une tentative de connexion sur PC a été initiée. Validez l'accès avec votre téléphone.
+                </p>
+              </div>
+
+              {/* Bannière d'approbation instantanée via live SSE */}
+              {pcApprovedNotice && (
+                <div className="p-3 rounded-2xl bg-emerald-500 text-white text-xs font-black text-center flex items-center justify-center space-x-2 animate-bounce">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{pcApprovedNotice}</span>
+                </div>
+              )}
+
+              {/* Guide étape par étape ultra-clair */}
+              <div className="p-3.5 bg-blue-50/90 dark:bg-[#0c1830] rounded-2xl border border-blue-200 dark:border-blue-900/80 text-xs space-y-2">
+                <div className="font-extrabold text-blue-900 dark:text-blue-300 flex items-center space-x-1.5">
+                  <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <span>Instructions sur votre téléphone :</span>
+                </div>
+                <ol className="space-y-1.5 text-slate-700 dark:text-slate-200 font-medium text-[11px] sm:text-xs">
+                  <li className="flex items-start space-x-2">
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                      1
+                    </span>
+                    <span>Ouvrez <strong>MK</strong> sur votre téléphone où votre compte est actif.</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                      2
+                    </span>
+                    <span>Accédez à <strong>Menu (☰) ➔ Paramètres</strong>.</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                      3
+                    </span>
+                    <span>Cliquez sur <strong>« Code de validation »</strong>.</span>
+                  </li>
+                  <li className="flex items-start space-x-2">
+                    <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                      4
+                    </span>
+                    <span>Lisez le code à 6 chiffres affiché et écrivez-le ci-dessous sur votre PC (ou touchez <em>« Autoriser »</em>) :</span>
+                  </li>
+                </ol>
+              </div>
+
+              {/* 6 Cases de saisie du PIN PC */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex justify-between gap-1.5">
+                  {pcDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => { pcDigitRefs.current[idx] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handlePcDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handlePcDigitKeyDown(idx, e)}
+                      autoFocus={idx === 0}
+                      className={`w-11 sm:w-12 h-12 sm:h-14 text-center text-lg sm:text-xl font-mono font-black rounded-2xl bg-[#f1f4f8] dark:bg-[#152238] border-2 transition-all focus:outline-none ${
+                        digit
+                          ? 'border-blue-600 text-slate-900 dark:text-white shadow-xs'
+                          : 'border-transparent text-slate-800 dark:text-white focus:border-blue-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                  <span>Valable encore : <strong className="text-blue-600 dark:text-blue-400 font-mono">{Math.floor(pcCountdown / 60)}:{(pcCountdown % 60).toString().padStart(2, '0')}</strong></span>
+                  <span className="inline-flex items-center space-x-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>Synchronisation live</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Bouton de validation sur PC */}
+              <button
+                type="button"
+                onClick={() => handleVerifyPcDigits()}
+                disabled={pcVerifying || pcDigits.some((d) => !d)}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md transition-all active:scale-[0.99] flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+              >
+                {pcVerifying ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Valider et Déverrouiller le PC</span>
+                  </>
+                )}
+              </button>
+
+              {/* Actions de simulation & tests faciles */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPhoneSimulator(true)}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-center space-x-2 transition cursor-pointer"
+                >
+                  <Smartphone className="w-4 h-4 text-blue-600" />
+                  <span>📱 Ouvrir l'écran Téléphone (Mode Test / Démo)</span>
+                </button>
+
+                {pcPreviewCode && (
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">Code actif pour ce test : <strong className="font-mono text-slate-800 dark:text-slate-200">{pcPreviewCode}</strong></span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const splitted = pcPreviewCode.slice(0, 6).split('');
+                        setPcDigits(splitted);
+                        handleVerifyPcDigits(pcPreviewCode);
+                      }}
+                      className="text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer"
+                    >
+                      Remplir auto
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setPcDigits(['', '', '', '', '', '']);
+                  }}
+                  className="w-full text-center text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white font-medium transition cursor-pointer pt-1"
+                >
+                  ← Annuler et revenir à la connexion
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Simulateur Téléphone Popover pour tester directement sur un seul écran */}
+          {showPhoneSimulator && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
+              <div className="w-full max-w-[340px] bg-white dark:bg-[#0c1424] rounded-3xl border-4 border-slate-800 dark:border-slate-700 shadow-2xl p-4 space-y-3 relative">
+                {/* En-tête smartphone */}
+                <div className="flex items-center justify-between text-xs font-bold pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center space-x-2">
+                    <Smartphone className="w-4 h-4 text-blue-600" />
+                    <span>Paramètres MK (Sur Téléphone)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPhoneSimulator(false)}
+                    className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/50 rounded-2xl border border-blue-200 dark:border-blue-900/60 text-center space-y-2">
+                  <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                    Code de Validation PC
+                  </span>
+                  <div className="font-mono text-3xl font-black text-slate-900 dark:text-white tracking-widest py-1">
+                    {pcPreviewCode || pcDigits.join('') || '849 201'}
+                  </div>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Ce code est actuellement affiché sur votre compte mobile dans Paramètres &gt; Code de validation.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (pcSessionId) {
+                        try {
+                          await api.auth.approvePcLogin({ sessionId: pcSessionId });
+                        } catch {
+                          // fallback
+                        }
+                      }
+                      setShowPhoneSimulator(false);
+                      if (pcPreviewCode) {
+                        setPcDigits(pcPreviewCode.slice(0, 6).split(''));
+                        handleVerifyPcDigits(pcPreviewCode);
+                      }
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs shadow-md flex items-center justify-center space-x-1.5 transition cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Approuver la connexion PC immédiatement</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (pcPreviewCode) {
+                        navigator.clipboard.writeText(pcPreviewCode);
+                        const splitted = pcPreviewCode.slice(0, 6).split('');
+                        setPcDigits(splitted);
+                      }
+                      setShowPhoneSimulator(false);
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs hover:bg-slate-200 transition cursor-pointer"
+                  >
+                    Copier le code dans le PC
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

@@ -89,7 +89,19 @@ export type NotificationType =
   | 'friend_accept'
   | 'direct_message'
   | 'reel_like'
-  | 'reel_comment';
+  | 'reel_comment'
+  | 'pc_login_code';
+
+export interface PcValidationSession {
+  sessionId: string;
+  userId: string;
+  email: string;
+  code: string;
+  deviceInfo: string;
+  createdAt: string;
+  expiresAt: string;
+  status: 'pending' | 'approved' | 'rejected' | 'used';
+}
 
 export interface AppNotification {
   id: string;
@@ -102,7 +114,7 @@ export interface AppNotification {
   title: string;
   message: string;
   targetId: string;
-  targetType: 'post' | 'poll' | 'quiz' | 'forum' | 'user' | 'reel' | 'message';
+  targetType: 'post' | 'poll' | 'quiz' | 'forum' | 'user' | 'reel' | 'message' | 'security';
   isRead: boolean;
   createdAt: string;
 }
